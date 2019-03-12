@@ -1,0 +1,179 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="src\ui\RenderPanel.cpp">
+      <Filter>src\ui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ui\ImagePanel.cpp">
+      <Filter>src\ui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ui\MainForm.cpp">
+      <Filter>src\ui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Application.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\metro\VFXReader.cpp">
+      <Filter>src\metro</Filter>
+    </ClCompile>
+    <ClCompile Include="src\metro\MetroTexture.cpp">
+      <Filter>src\metro</Filter>
+    </ClCompile>
+    <ClCompile Include="libs\lz4\lz4.c">
+      <Filter>libs\lz4</Filter>
+    </ClCompile>
+    <ClCompile Include="libs\bc7enc16\bc7decomp.c">
+      <Filter>libs\bc7enc16</Filter>
+    </ClCompile>
+    <ClCompile Include="libs\xxhash\xxhash.c">
+      <Filter>libs\xxhash</Filter>
+    </ClCompile>
+    <ClCompile Include="src\dds_utils.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\hashing.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\metro\MetroLevel.cpp">
+      <Filter>src\metro</Filter>
+    </ClCompile>
+    <ClCompile Include="src\metro\MetroModel.cpp">
+      <Filter>src\metro</Filter>
+    </ClCompile>
+    <ClCompile Include="src\metro\MetroReflection.cpp">
+      <Filter>src\metro</Filter>
+    </ClCompile>
+    <ClCompile Include="src\metro\MetroSkeleton.cpp">
+      <Filter>src\metro</Filter>
+    </ClCompile>
+    <ClCompile Include="src\metro\MetroTexturesDatabase.cpp">
+      <Filter>src\metro</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ui\ExtractionOptionsDgl.cpp">
+      <Filter>src\ui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\metro\MetroSound.cpp">
+      <Filter>src\metro</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ui\ChooseFolderDlg.cpp">
+      <Filter>src\ui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ui\AboutDlg.cpp">
+      <Filter>src\ui</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\ui\RenderPanel.h">
+      <Filter>src\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ui\ImagePanel.h">
+      <Filter>src\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ui\MainForm.h">
+      <Filter>src\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="src\mycommon.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\mymath.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\metro\VFXReader.h">
+      <Filter>src\metro</Filter>
+    </ClInclude>
+    <ClInclude Include="src\metro\MetroTexture.h">
+      <Filter>src\metro</Filter>
+    </ClInclude>
+    <ClInclude Include="libs\lz4\lz4.h">
+      <Filter>libs\lz4</Filter>
+    </ClInclude>
+    <ClInclude Include="libs\bc7enc16\bc7decomp.h">
+      <Filter>libs\bc7enc16</Filter>
+    </ClInclude>
+    <ClInclude Include="libs\xxhash\xxhash.h">
+      <Filter>libs\xxhash</Filter>
+    </ClInclude>
+    <ClInclude Include="src\dds_utils.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\hashing.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\metro\MetroLevel.h">
+      <Filter>src\metro</Filter>
+    </ClInclude>
+    <ClInclude Include="src\metro\MetroModel.h">
+      <Filter>src\metro</Filter>
+    </ClInclude>
+    <ClInclude Include="src\metro\MetroReflection.h">
+      <Filter>src\metro</Filter>
+    </ClInclude>
+    <ClInclude Include="src\metro\MetroSkeleton.h">
+      <Filter>src\metro</Filter>
+    </ClInclude>
+    <ClInclude Include="src\metro\MetroTexturesDatabase.h">
+      <Filter>src\metro</Filter>
+    </ClInclude>
+    <ClInclude Include="src\metro\MetroTypes.h">
+      <Filter>src\metro</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ui\ExtractionOptionsDgl.h">
+      <Filter>src\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="src\metro\MetroSound.h">
+      <Filter>src\metro</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ui\ChooseFolderDlg.h">
+      <Filter>src\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ui\AboutDlg.h">
+      <Filter>src\ui</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="src\ui\ImagePanel.resx" />
+    <EmbeddedResource Include="src\ui\MainForm.resx" />
+    <EmbeddedResource Include="src\ui\ExtractionOptionsDgl.resx" />
+    <EmbeddedResource Include="src\ui\AboutDlg.resx" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="src">
+      <UniqueIdentifier>{0ba16106-9ed6-4b67-b66e-8ae05a20a83f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\ui">
+      <UniqueIdentifier>{3f446de9-de47-422f-a9af-7cc7135c1c1b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\metro">
+      <UniqueIdentifier>{5d82e6c3-1063-43cb-af8c-633d9c7c1d81}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libs">
+      <UniqueIdentifier>{d2756712-884c-495b-abd5-5e17d8a702c7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libs\lz4">
+      <UniqueIdentifier>{a39e0cbc-9275-493c-80d6-f849d1611e75}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libs\bc7enc16">
+      <UniqueIdentifier>{cce651b1-98c7-46b7-9324-d6fd03650a0a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libs\xxhash">
+      <UniqueIdentifier>{2125f47f-594e-4d31-9958-b9fa9549696c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\shaders">
+      <UniqueIdentifier>{cee2b1cb-62a2-4870-9f25-ebf41f6fd84b}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="res.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="mask.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="src\shaders\ModelViewerVS.hlsl">
+      <Filter>src\shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="src\shaders\ModelViewerPS.hlsl">
+      <Filter>src\shaders</Filter>
+    </FxCompile>
+  </ItemGroup>
+</Project>

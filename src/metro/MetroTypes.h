@@ -32,6 +32,17 @@ struct MetroFile {
 };
 
 
+struct MetroBinFlags {
+    static const uint8_t None           =   0;
+    static const uint8_t HasDebugInfo   =   1;
+    static const uint8_t Unknown_2      =   2;
+    static const uint8_t RefStrings     =   4;
+    static const uint8_t Unknown_8      =   8;
+    static const uint8_t Unknown_16     =   16;
+    static const uint8_t Unknown_32     =   32;
+};
+
+
 PACKED_STRUCT_BEGIN
 struct MetroFace {
     uint16_t a, b, c;
@@ -162,14 +173,4 @@ enum class MetroBodyPart : size_t {
     Rightleg    = 7,
     Chest       = 8,
     Gear        = 9
-};
-
-struct MetroBone {
-    static const size_t InvalidIdx = ~0;
-
-    size_t          name;
-    size_t          parentName;
-    quat            bindQ;
-    vec3            bindT;
-    MetroBodyPart   bodyPart;
 };

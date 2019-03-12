@@ -39,6 +39,25 @@ using BytesArray = Array<uint8_t>;
 #define PACKED_STRUCT_END __pragma(pack(pop))
 #endif
 
+
+struct RefString {
+    static const uint32_t InvalidRef = ~0u;
+
+    RefString() : ref(InvalidRef) {}
+    RefString(const RefString& other) : ref(other.ref), str(other.str) {}
+
+    bool operator ==(const RefString& other) const {
+        if (ref != InvalidRef) {
+            return ref == other.ref;
+        } else {
+            return str == other.str;
+        }
+    }
+
+    uint32_t    ref;
+    CharString  str;
+};
+
 struct Hasher {
     static uint32_t FromData(const void* data, const size_t length) {
         return XXH32(data, length, 0);
@@ -173,6 +192,18 @@ private:
 };
 
 
+template <typename T>
+constexpr T SetBit(const T& v, const T& bit) {
+    return v |= bit;
+}
+template <typename T>
+constexpr T RemoveBit(const T& v, const T& bit) {
+    return v &= ~bit;
+}
+template <typename T>
+constexpr bool TestBit(const T& v, const T& bit) {
+    return 0 != (v & bit);
+}
 
 
 #ifndef SAFE_RELEASE

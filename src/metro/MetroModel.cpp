@@ -685,10 +685,16 @@ void MetroModel::ReadSubChunks(MemStream& stream) {
                     if (mVFXReader->ExtractFile(fileIdx, content)) {
                         mSkeleton = new MetroSkeleton();
                         if (!mSkeleton->LoadFromData(content.data(), content.size())) {
-                            delete mSkeleton;
-                            mSkeleton = nullptr;
+                            SAFE_DELETE(mSkeleton);
                         }
                     }
+                }
+            } break;
+
+            case MC_SkeletonInline: {
+                mSkeleton = new MetroSkeleton();
+                if (!mSkeleton->LoadFromData(stream.GetDataAtCursor(), chunkSize)) {
+                    SAFE_DELETE(mSkeleton);
                 }
             } break;
         }

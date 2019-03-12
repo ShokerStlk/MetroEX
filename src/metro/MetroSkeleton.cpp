@@ -1,19 +1,20 @@
 #include "MetroSkeleton.h"
-#include "hashing.h"
+#include "MetroReflection.h"
 
 enum SkeletonChunks : size_t {
-    SC_Bones        = 0x00000001,
-    SC_BonesNames   = 0x00000002,
+    SC_SelfData             = 0x00000001,
+    SC_StringsDictionary    = 0x00000002,
 };
 
 
-PACKED_STRUCT_BEGIN
-struct SkeletonHeader {
-    uint32_t    version;        // always 21 ???
-    uint32_t    bonesCRC;
-    uint8_t     unknown0[21];
-    uint32_t    numBones;
-} PACKED_STRUCT_END;
+void MetroBone::Serialize(MetroReflectionReader& s) {
+    METRO_READ_MEMBER(s, name);
+    METRO_READ_MEMBER(s, parent);
+    METRO_READ_MEMBER(s, q);
+    METRO_READ_MEMBER(s, t);
+    METRO_READ_MEMBER(s, bp);
+    METRO_READ_MEMBER(s, bpf);
+}
 
 
 MetroSkeleton::MetroSkeleton() {
@@ -28,30 +29,35 @@ bool MetroSkeleton::LoadFromData(const uint8_t* data, const size_t dataLength) {
 
     MemStream stream(data, dataLength);
 
-    const size_t version = stream.ReadTyped<uint8_t>();
-    if (version == 0x14) {
-        this->ReadSubChunks(stream);
-        result = !mBones.empty();
+    const uint8_t flags = stream.ReadTyped<uint8_t>();
+    const bool hasDebugInfo = TestBit(flags, MetroBinFlags::HasDebugInfo);
+
+    if (hasDebugInfo) {
+        this->DeserializeSelf(stream, flags);
+    } else {
+        this->ReadSubChunks(stream, flags);
     }
+
+    result = !this->bones.empty();
 
     return result;
 }
 
 size_t MetroSkeleton::GetNumBones() const {
-    return mBones.size();
+    return this->bones.size();
 }
 
 const quat& MetroSkeleton::GetBoneRotation(const size_t idx) const {
-    return mBones[idx].bindQ;
+    return this->bones[idx].q;
 }
 
 const vec3& MetroSkeleton::GetBonePosition(const size_t idx) const {
-    return mBones[idx].bindT;
+    return this->bones[idx].t;
 }
 
 mat4 MetroSkeleton::GetBoneTransform(const size_t idx) const {
-    mat4 result = MatFromQuat(mBones[idx].bindQ);
-    result[3] = vec4(mBones[idx].bindT, 1.0f);
+    mat4 result = MatFromQuat(this->bones[idx].q);
+    result[3] = vec4(this->bones[idx].t, 1.0f);
     return result;
 }
 
@@ -67,9 +73,9 @@ mat4 MetroSkeleton::GetBoneFullTransform(const size_t idx) const {
 const size_t MetroSkeleton::GetBoneParentIdx(const size_t idx) const {
     size_t result = MetroBone::InvalidIdx;
 
-    const size_t parentName = mBones[idx].parentName;
-    for (size_t i = 0; i < mBones.size(); ++i) {
-        if (mBones[i].name == parentName) {
+    const RefString& parentName = this->bones[idx].parent;
+    for (size_t i = 0; i < this->bones.size(); ++i) {
+        if (this->bones[i].name == parentName) {
             result = i;
             break;
         }
@@ -79,37 +85,59 @@ const size_t MetroSkeleton::GetBoneParentIdx(const size_t idx) const {
 }
 
 const CharString& MetroSkeleton::GetBoneName(const size_t idx) const {
-    return mStrings[mBones[idx].name];
+    const RefString& name = this->bones[idx].name;
+    if (name.ref != RefString::InvalidRef) {
+        return mStringsDict[name.ref];
+    } else {
+        return name.str;
+    }
 }
 
 
+void MetroSkeleton::DeserializeSelf(MemStream& stream, const uint8_t flags) {
+    const bool hasDebugInfo = TestBit(flags, MetroBinFlags::HasDebugInfo);
+    const bool stringsAsRef = TestBit(flags, MetroBinFlags::RefStrings);
 
-void MetroSkeleton::ReadSubChunks(MemStream& stream) {
+    MetroReflectionReader s(stream, hasDebugInfo, stringsAsRef);
+
+    if (hasDebugInfo) {
+        //#NOTE_SK: temporary hack to skip section header
+        const CharString& sectionName = s.BeginSection();
+        assert(sectionName == "skeleton");
+    }
+
+    METRO_READ_MEMBER(s, ver);
+    METRO_READ_MEMBER(s, crc);
+    METRO_READ_MEMBER(s, pfnn);
+    METRO_READ_MEMBER(s, has_as);
+    METRO_READ_MEMBER(s, motions);
+    METRO_READ_MEMBER(s, source_info);
+    METRO_READ_MEMBER(s, parent_skeleton);
+    METRO_READ_STRUCT_ARRAY_MEMBER(s, parent_bone_maps);
+    METRO_READ_STRUCT_ARRAY_MEMBER(s, bones);
+
+    //#TODO_SK:
+    // locators
+    // aux_bones
+    // procedural
+}
+
+void MetroSkeleton::ReadSubChunks(MemStream& stream, const uint8_t flags) {
     while (!stream.Ended()) {
         const size_t chunkId = stream.ReadTyped<uint32_t>();
         const size_t chunkSize = stream.ReadTyped<uint32_t>();
         const size_t chunkEnd = stream.GetCursor() + chunkSize;
 
         switch (chunkId) {
-            case SC_Bones: {
-                SkeletonHeader header;
-                stream.ReadStruct(header);
-
-                mBones.resize(header.numBones);
-                for (MetroBone& bone : mBones) {
-                    bone.name = stream.ReadTyped<uint32_t>();
-                    bone.parentName = stream.ReadTyped<uint32_t>();
-                    stream.ReadStruct(bone.bindQ);
-                    stream.ReadStruct(bone.bindT);
-                    bone.bodyPart = scast<MetroBodyPart>(stream.ReadTyped<uint16_t>());
-                }
+            case SC_SelfData: {
+                this->DeserializeSelf(stream.Substream(chunkSize), flags);
             } break;
 
-            case SC_BonesNames: {
+            case SC_StringsDictionary: {
                 const size_t numStrings = stream.ReadTyped<uint32_t>();
-                mStrings.resize(numStrings);
+                mStringsDict.resize(numStrings);
 
-                for (CharString& s : mStrings) {
+                for (CharString& s : mStringsDict) {
                     s = stream.ReadStringZ();
                 }
             } break;

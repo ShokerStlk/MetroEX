@@ -18,3 +18,10 @@
 *.exe
 *.out
 *.app
+
+# configs
+*.user
+
+# folders
+.vs
+x64

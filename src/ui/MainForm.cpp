@@ -45,6 +45,16 @@ namespace MetroEX {
 
 
     void MainForm::MainForm_Load(System::Object^, System::EventArgs^) {
+//#ifdef _DEBUG
+//        //#NOTE_SK: for debugging purposes we might want to extract raw files
+//        this->ctxMenuExportModel->Items->Add(this->extractFileToolStripMenuItem);
+//        this->ctxMenuExportModel->Size.Height += this->extractFileToolStripMenuItem->Size.Height;
+//        this->ctxMenuExportTexture->Items->Add(this->extractFileToolStripMenuItem);
+//        this->ctxMenuExportTexture->Size.Height += this->extractFileToolStripMenuItem->Size.Height;
+//        this->ctxMenuExportSound->Items->Add(this->extractFileToolStripMenuItem);
+//        this->ctxMenuExportSound->Size.Height += this->extractFileToolStripMenuItem->Size.Height;
+//#endif
+
         mImagePanel = gcnew ImagePanel();
         this->splitContainer1->Panel2->Controls->Add(mImagePanel);
         mImagePanel->Dock = System::Windows::Forms::DockStyle::Fill;
@@ -159,23 +169,23 @@ namespace MetroEX {
             if (mf.IsFile()) {
                 switch (fileType) {
                     case FileType::Texture: {
-                        ctxMenuExportTexture->Show(this->treeView1, e->X, e->Y);
+                        this->ctxMenuExportTexture->Show(this->treeView1, e->X, e->Y);
                     } break;
 
                     case FileType::Model: {
-                        ctxMenuExportModel->Show(this->treeView1, e->X, e->Y);
+                        this->ctxMenuExportModel->Show(this->treeView1, e->X, e->Y);
                     } break;
 
                     case FileType::Sound: {
-                        ctxMenuExportSound->Show(this->treeView1, e->X, e->Y);
+                        this->ctxMenuExportSound->Show(this->treeView1, e->X, e->Y);
                     } break;
 
                     default: {
-                        ctxMenuExportRaw->Show(this->treeView1, e->X, e->Y);
+                        this->ctxMenuExportRaw->Show(this->treeView1, e->X, e->Y);
                     } break;
                 }
             } else {
-                ctxMenuExportFolder->Show(this->treeView1, e->X, e->Y);
+                this->ctxMenuExportFolder->Show(this->treeView1, e->X, e->Y);
             }
         }
     }

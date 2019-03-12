@@ -1,10 +1,16 @@
 #include "MetroTexturesDatabase.h"
 #include "MetroReflection.h"
+#include "MetroTypes.h"
 
 
 void MetroTextureInfo::Serialize(MetroReflectionReader& s) {
     METRO_READ_MEMBER_NO_VERIFY(s, name);
     METRO_READ_MEMBER_NO_VERIFY(s, flags);
+
+    const bool hasDebugInfo = TestBit(flags, MetroBinFlags::HasDebugInfo);
+    const bool stringsAsRef = TestBit(flags, MetroBinFlags::RefStrings);
+    s.SetOptions(hasDebugInfo, stringsAsRef);
+
     METRO_READ_MEMBER(s, type);
     METRO_READ_MEMBER(s, texture_type);
     METRO_READ_MEMBER(s, source_name);
@@ -51,6 +57,8 @@ void MetroTextureInfo::Serialize(MetroReflectionReader& s) {
     METRO_READ_MEMBER_CHOOSE(s, aux5_name);
     METRO_READ_MEMBER_CHOOSE(s, aux6_name);
     METRO_READ_MEMBER_CHOOSE(s, aux7_name);
+
+    s.SetOptions();
 }
 
 
@@ -177,7 +185,7 @@ const CharString& MetroTexturesDatabase::GetSourceName(const HashString& name) c
     const HashString& alias = this->GetAlias(name);
 
     const MetroTextureInfo* mti = this->GetInfoByName((alias.hash == 0) ? name : alias);
-    return (mti == nullptr) ? emptyStr : mti->source_name;
+    return (mti == nullptr) ? emptyStr : mti->source_name.str;
 }
 
 const CharString& MetroTexturesDatabase::GetBumpName(const HashString& name) const {
@@ -186,5 +194,5 @@ const CharString& MetroTexturesDatabase::GetBumpName(const HashString& name) con
     const HashString& alias = this->GetAlias(name);
 
     const MetroTextureInfo* mti = this->GetInfoByName((alias.hash == 0) ? name : alias);
-    return (mti == nullptr) ? emptyStr : mti->bump_name;
+    return (mti == nullptr) ? emptyStr : mti->bump_name.str;
 }

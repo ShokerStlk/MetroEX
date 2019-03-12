@@ -1,6 +1,21 @@
 #pragma once
 #include "MetroTypes.h"
 
+class MetroReflectionReader;
+
+struct MetroBone {
+    static const size_t InvalidIdx = ~0;
+
+    RefString   name;
+    RefString   parent;
+    quat        q;
+    vec3        t;
+    uint8_t     bp;
+    uint8_t     bpf;
+
+    void Serialize(MetroReflectionReader& s);
+};
+
 class MetroSkeleton {
 public:
     MetroSkeleton();
@@ -17,9 +32,19 @@ public:
     const CharString&   GetBoneName(const size_t idx) const;
 
 private:
-    void                ReadSubChunks(MemStream& stream);
+    void                DeserializeSelf(MemStream& stream, const uint8_t flags);
+    void                ReadSubChunks(MemStream& stream, const uint8_t flags);
 
 private:
-    Array<MetroBone>    mBones;
-    StringArray         mStrings;
+    uint32_t            ver;                // always 21 ???
+    uint32_t            crc;
+    RefString           pfnn;               // string
+    bool                has_as;
+    RefString           motions;            // string
+    RefString           source_info;        // string
+    RefString           parent_skeleton;    // string
+    Array<uint32_t>     parent_bone_maps;   //
+    Array<MetroBone>    bones;
+
+    StringArray         mStringsDict;
 };

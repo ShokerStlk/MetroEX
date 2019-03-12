@@ -32,7 +32,7 @@ struct MetroTextureInfo {
     uint8_t         flags;          // no verification!
     uint32_t        type;
     uint8_t         texture_type;
-    CharString      source_name;
+    RefString       source_name;
     vec4            surf_xform;
     uint32_t        format;
     uint32_t        width;
@@ -41,8 +41,8 @@ struct MetroTextureInfo {
     bool            draft;
     bool            override_avg_color;
     color4f         avg_color;
-    CharString      shader_name;    // choose
-    CharString      gamemtl_name;   // choose
+    RefString       shader_name;    // choose
+    RefString       gamemtl_name;   // choose
     uint32_t        priority;
     bool            streamable;
     float           bump_height;
@@ -52,7 +52,7 @@ struct MetroTextureInfo {
     bool            mipmapped;
     float           reflectivity;
     bool            treat_as_metal;
-    CharString      det_name;       // choose
+    RefString       det_name;       // choose
     float           det_scale_u;
     float           det_scale_v;
     float           det_intensity;
@@ -62,15 +62,15 @@ struct MetroTextureInfo {
     Array<uint8_t>  lum;
     Array<float>    sph_coefs;
     ///////////////////////////
-    CharString      bump_name;      // choose
-    CharString      aux0_name;      // choose
-    CharString      aux1_name;      // choose
-    CharString      aux2_name;      // choose
-    CharString      aux3_name;      // choose
-    CharString      aux4_name;      // choose
-    CharString      aux5_name;      // choose
-    CharString      aux6_name;      // choose
-    CharString      aux7_name;      // choose
+    RefString       bump_name;      // choose
+    RefString       aux0_name;      // choose
+    RefString       aux1_name;      // choose
+    RefString       aux2_name;      // choose
+    RefString       aux3_name;      // choose
+    RefString       aux4_name;      // choose
+    RefString       aux5_name;      // choose
+    RefString       aux6_name;      // choose
+    RefString       aux7_name;      // choose
 
     void Serialize(MetroReflectionReader& s);
 };

@@ -2,6 +2,7 @@
 #include "mycommon.h"
 #include "mymath.h"
 
+
 #define METRO_MAKE_TYPE_ALIAS_STRING_NAME(type, alias)  sMetroRegisteredType##type##Alias##alias##Str
 #define METRO_MAKE_TYPE_ARRAY_ALIAS_STRING_NAME(type, alias)  sMetroRegisteredTypeArray##type##Alias##alias##Str
 
@@ -50,7 +51,9 @@ METRO_REGISTER_TYPE_ALIAS(float, fp32)
 METRO_REGISTER_TYPE_ALIAS(vec2, vec2f)
 METRO_REGISTER_TYPE_ALIAS(vec3, vec3f)
 METRO_REGISTER_TYPE_ALIAS(vec4, vec4f)
+METRO_REGISTER_TYPE_ALIAS(quat, vec4f)
 METRO_REGISTER_TYPE_ALIAS(CharString, stringz)
+METRO_REGISTER_TYPE_ALIAS(RefString, stringz)
 
 METRO_REGISTER_INHERITED_TYPE_ALIAS(color4f, vec4f, color)
 
@@ -63,7 +66,16 @@ METRO_REGISTER_TYPE_ARRAY_ALIAS(float, fp32)
 
 class MetroReflectionReader {
 public:
-    MetroReflectionReader(const MemStream& s, const bool verifyTypeInfo = false) : mStream(s), mVerifyTypesInfo(verifyTypeInfo) {}
+    MetroReflectionReader(const MemStream& s, const bool verifyTypeInfo = false, const bool refStrings = false)
+        : mStream(s)
+        , mVerifyTypesInfo(verifyTypeInfo)
+        , mReadRefStrings(refStrings)
+    {}
+
+    void SetOptions(const bool verifyTypeInfo = false, const bool refStrings = false) {
+        mVerifyTypesInfo = verifyTypeInfo;
+        mReadRefStrings = refStrings;
+    }
 
     bool ReadEditorTag(const CharString& propName) {
         CharString name = mStream.ReadStringZ();
@@ -77,22 +89,59 @@ public:
     }
 
     bool VerifyTypeInfo(const CharString& propName, const CharString& typeAlias) {
-        CharString name = mStream.ReadStringZ();
-        assert(name == propName);
-        if (name != propName) {
-            return false;
-        }
+        if (mVerifyTypesInfo) {
+            CharString name = mStream.ReadStringZ();
+            assert(name == propName);
+            if (name != propName) {
+                return false;
+            }
 
-        CharString type = mStream.ReadStringZ();
-        assert(type == typeAlias);
-        if (type != typeAlias) {
-            return false;
+            CharString type = mStream.ReadStringZ();
+            assert(type == typeAlias);
+            if (type != typeAlias) {
+                return false;
+            }
         }
         return true;
     }
 
+    CharString BeginSection() {
+        uint32_t dataCrc, dataSize;
+        uint8_t flags;
+        CharString sectionName;
+
+        (*this) >> dataCrc;
+        (*this) >> dataSize;
+        (*this) >> flags;       //#TODO_SK: check ???
+        (*this) >> sectionName;
+
+        return sectionName;
+    }
+
     template <typename T>
-    void operator >>(T& v) {
+    void ReadStructArray(const CharString& memberName, Array<T>& v) {
+        if (mVerifyTypesInfo) {
+            this->VerifyTypeInfo(memberName, "array");
+            CharString& sectionName = this->BeginSection();
+            assert(sectionName == memberName);
+            this->VerifyTypeInfo("count", MetroTypeGetAlias<uint32_t>());
+        }
+        uint32_t arraySize;
+        (*this) >> arraySize;
+        if (arraySize > 0) {
+            v.resize(arraySize);
+            for (T& e : v) {
+                if (mVerifyTypesInfo) {
+                    this->BeginSection();
+                }
+
+                (*this) >> e;
+            }
+        }
+    }
+
+    template <typename T>
+    inline void operator >>(T& v) {
         v.Serialize(*this);
     }
 
@@ -112,43 +161,58 @@ public:
 
 #undef IMPLEMENT_SIMPLE_TYPE_READ
 
-    void operator >>(CharString& v) {
+    inline void operator >>(CharString& v) {
         v = mStream.ReadStringZ();
     }
 
-    void operator >>(vec2& v) {
-        *this >> v.x;
-        *this >> v.y;
+    inline void operator >>(RefString& v) {
+        if (mReadRefStrings) {
+            (*this) >> v.ref;
+        } else {
+            (*this) >> v.str;
+        }
     }
 
-    void operator >>(vec3& v) {
-        *this >> v.x;
-        *this >> v.y;
-        *this >> v.z;
+    inline void operator >>(vec2& v) {
+        (*this) >> v.x;
+        (*this) >> v.y;
     }
 
-    void operator >>(vec4& v) {
-        *this >> v.x;
-        *this >> v.y;
-        *this >> v.z;
-        *this >> v.w;
+    inline void operator >>(vec3& v) {
+        (*this) >> v.x;
+        (*this) >> v.y;
+        (*this) >> v.z;
     }
 
-    void operator >>(color4f& v) {
-        *this >> v.r;
-        *this >> v.g;
-        *this >> v.b;
-        *this >> v.a;
+    inline void operator >>(vec4& v) {
+        (*this) >> v.x;
+        (*this) >> v.y;
+        (*this) >> v.z;
+        (*this) >> v.w;
+    }
+
+    inline void operator >>(quat& v) {
+        (*this) >> v.x;
+        (*this) >> v.y;
+        (*this) >> v.z;
+        (*this) >> v.w;
+    }
+
+    inline void operator >>(color4f& v) {
+        (*this) >> v.r;
+        (*this) >> v.g;
+        (*this) >> v.b;
+        (*this) >> v.a;
     }
 
 
 #define IMPLEMENT_TYPE_ARRAY_READ(type)     \
     void operator >>(Array<type>& v) {      \
         uint32_t numElements = 0;           \
-        *this >> numElements;               \
+        (*this) >> numElements;               \
         v.resize(numElements);              \
         for (type& e : v) {                 \
-            *this >> e;                     \
+            (*this) >> e;                     \
         }                                   \
     }
 
@@ -165,6 +229,7 @@ public:
 private:
     MemStream   mStream;
     bool        mVerifyTypesInfo;
+    bool        mReadRefStrings;
 };
 
 
@@ -183,6 +248,8 @@ struct ArrayElementTypeGetter {
 #define METRO_READ_ARRAY_MEMBER(s, memberName)                                                                                  \
     s.VerifyTypeInfo(STRINGIFY(memberName), MetroTypeArrayGetAlias<ArrayElementTypeGetter<decltype(memberName)>::elem_type>()); \
     s >> memberName;
+
+#define METRO_READ_STRUCT_ARRAY_MEMBER(s, memberName)   s.ReadStructArray(STRINGIFY(memberName), memberName)
 
 #define METRO_READ_MEMBER_CHOOSE(s, memberName)                                         \
     s.ReadEditorTag(STRINGIFY(memberName));                                             \

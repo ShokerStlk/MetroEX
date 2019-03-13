@@ -46,8 +46,12 @@ struct RefString {
     RefString() : ref(InvalidRef) {}
     RefString(const RefString& other) : ref(other.ref), str(other.str) {}
 
+    inline bool IsValidRef() const {
+        return this->ref != InvalidRef;
+    }
+
     bool operator ==(const RefString& other) const {
-        if (ref != InvalidRef) {
+        if (this->IsValidRef()) {
             return ref == other.ref;
         } else {
             return str == other.str;

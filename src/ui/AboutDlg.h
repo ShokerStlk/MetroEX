@@ -117,7 +117,7 @@ namespace MetroEX {
             String^ rtfText = LR"({\rtf1\ansi\ansicpg1251\deff0\nouicompat\deflang1049{\fonttbl{\f0\fnil\fcharset204 Segoe UI;}{\f1\fnil\fcharset0 Calibri;}}
 {\colortbl ;\red0\green77\blue187;\red243\green164\blue71;}
 {\*\generator Riched20 10.0.17763}\viewkind4\uc1 
-\pard\qc\cf1\b\f0\fs18 MetroEX\cf0\b0  v0.28c\par
+\pard\qc\cf1\b\f0\fs18 MetroEX\cf0\b0  v0.29\par
 \par
 Created by Sergii "\cf2 iOrange\cf0 " Kudlai\par
 \par

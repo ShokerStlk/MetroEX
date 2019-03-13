@@ -7,13 +7,21 @@ enum SkeletonChunks : size_t {
 };
 
 
-void MetroBone::Serialize(MetroReflectionReader& s) {
-    METRO_READ_MEMBER(s, name);
-    METRO_READ_MEMBER(s, parent);
-    METRO_READ_MEMBER(s, q);
-    METRO_READ_MEMBER(s, t);
-    METRO_READ_MEMBER(s, bp);
-    METRO_READ_MEMBER(s, bpf);
+void ParentMapped::Serialize(MetroReflectionReader& reader) {
+    METRO_READ_MEMBER(reader, parent_bone);
+    METRO_READ_MEMBER(reader, self_bone);
+    METRO_READ_MEMBER(reader, q);
+    METRO_READ_MEMBER(reader, t);
+    METRO_READ_MEMBER(reader, s);
+}
+
+void MetroBone::Serialize(MetroReflectionReader& reader) {
+    METRO_READ_MEMBER(reader, name);
+    METRO_READ_MEMBER(reader, parent);
+    METRO_READ_MEMBER(reader, q);
+    METRO_READ_MEMBER(reader, t);
+    METRO_READ_MEMBER(reader, bp);
+    METRO_READ_MEMBER(reader, bpf); // if skeleton version > 18
 }
 
 
@@ -86,7 +94,7 @@ const size_t MetroSkeleton::GetBoneParentIdx(const size_t idx) const {
 
 const CharString& MetroSkeleton::GetBoneName(const size_t idx) const {
     const RefString& name = this->bones[idx].name;
-    if (name.ref != RefString::InvalidRef) {
+    if (name.IsValidRef()) {
         return mStringsDict[name.ref];
     } else {
         return name.str;
@@ -108,12 +116,13 @@ void MetroSkeleton::DeserializeSelf(MemStream& stream, const uint8_t flags) {
 
     METRO_READ_MEMBER(s, ver);
     METRO_READ_MEMBER(s, crc);
-    METRO_READ_MEMBER(s, pfnn);
-    METRO_READ_MEMBER(s, has_as);
+    // if version < 15 - read facefx (RefString)
+    METRO_READ_MEMBER(s, pfnn); // if version > 16
+    METRO_READ_MEMBER(s, has_as); // if version > 20
     METRO_READ_MEMBER(s, motions);
-    METRO_READ_MEMBER(s, source_info);
-    METRO_READ_MEMBER(s, parent_skeleton);
-    METRO_READ_STRUCT_ARRAY_MEMBER(s, parent_bone_maps);
+    METRO_READ_MEMBER(s, source_info); // if version > 12
+    METRO_READ_MEMBER(s, parent_skeleton); // if version > 13
+    METRO_READ_STRUCT_ARRAY_MEMBER(s, parent_bone_maps); // if version > 13
     METRO_READ_STRUCT_ARRAY_MEMBER(s, bones);
 
     //#TODO_SK:

@@ -301,9 +301,11 @@ namespace MetroEX {
 
         if (mModelGeometries) {
             for each (RenderGeometry* rg in mModelGeometries) {
-                rg->vb->Release();
-                rg->ib->Release();
-                delete rg;
+                if (rg) {
+                    SAFE_RELEASE(rg->vb);
+                    SAFE_RELEASE(rg->ib);
+                    delete rg;
+                }
             }
 
             SAFE_DELETE(mModelGeometries);
@@ -317,41 +319,45 @@ namespace MetroEX {
         AABBox modelBBox;
         modelBBox.Reset();
         for (size_t i = 0; i < numMeshes; ++i) {
-            RenderGeometry* rg = new RenderGeometry;
             const MetroMesh* mesh = mModel->GetMesh(i);
+            if (!mesh->vertices.empty() && !mesh->faces.empty()) {
+                RenderGeometry* rg = new RenderGeometry;
 
-            AABBox bbox;
-            bbox.Reset();
+                AABBox bbox;
+                bbox.Reset();
 
-            rg->texture = nullptr;
-            rg->numFaces = mesh->faces.size();
+                rg->texture = nullptr;
+                rg->numFaces = mesh->faces.size();
 
-            D3D11_BUFFER_DESC desc = {};
-            D3D11_SUBRESOURCE_DATA subData = {};
+                D3D11_BUFFER_DESC desc = {};
+                D3D11_SUBRESOURCE_DATA subData = {};
 
-            //vb
-            desc.ByteWidth = scast<UINT>(mesh->vertices.size() * sizeof(MetroVertex));
-            desc.Usage = D3D11_USAGE_DEFAULT;
-            desc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-            subData.pSysMem = mesh->vertices.data();
-            mDevice->CreateBuffer(&desc, &subData, &rg->vb);
+                //vb
+                desc.ByteWidth = scast<UINT>(mesh->vertices.size() * sizeof(MetroVertex));
+                desc.Usage = D3D11_USAGE_DEFAULT;
+                desc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+                subData.pSysMem = mesh->vertices.data();
+                mDevice->CreateBuffer(&desc, &subData, &rg->vb);
 
-            //ib
-            desc.ByteWidth = scast<UINT>(mesh->faces.size() * sizeof(MetroFace));
-            desc.BindFlags = D3D11_BIND_INDEX_BUFFER;
-            subData.pSysMem = mesh->faces.data();
-            mDevice->CreateBuffer(&desc, &subData, &rg->ib);
+                //ib
+                desc.ByteWidth = scast<UINT>(mesh->faces.size() * sizeof(MetroFace));
+                desc.BindFlags = D3D11_BIND_INDEX_BUFFER;
+                subData.pSysMem = mesh->faces.data();
+                mDevice->CreateBuffer(&desc, &subData, &rg->ib);
 
-            for (const MetroVertex& v : mesh->vertices) {
-                bbox.Absorb(v.pos);
+                for (const MetroVertex& v : mesh->vertices) {
+                    bbox.Absorb(v.pos);
+                }
+
+                modelBBox.Absorb(bbox.minimum);
+                modelBBox.Absorb(bbox.maximum);
+
+                mConstantBufferData->modelBSphere = vec4(modelBBox.Center(), Length(modelBBox.Extent()));
+
+                mModelGeometries[scast<int>(i)] = rg;
+            } else {
+                mModelGeometries[scast<int>(i)] = nullptr;
             }
-
-            modelBBox.Absorb(bbox.minimum);
-            modelBBox.Absorb(bbox.maximum);
-
-            mConstantBufferData->modelBSphere = vec4(modelBBox.Center(), Length(modelBBox.Extent()));
-
-            mModelGeometries[scast<int>(i)] = rg;
         }
     }
 
@@ -371,76 +377,77 @@ namespace MetroEX {
         for (size_t i = 0; i < numMeshes; ++i) {
             const MetroMesh* mesh = mModel->GetMesh(i);
             RenderGeometry* rg = mModelGeometries[scast<int>(i)];
+            if (rg) {
+                const CharString& textureName = mesh->materials.front();
+                const CharString& sourceName = mDatabase->GetSourceName(textureName);
 
-            const CharString& textureName = mesh->materials.front();
-            const CharString& sourceName = mDatabase->GetSourceName(textureName);
+                String^ texNameManaged = msclr::interop::marshal_as<String^>(textureName);
 
-            String^ texNameManaged = msclr::interop::marshal_as<String^>(textureName);
+                const bool contains = mModelTextures->ContainsKey(texNameManaged);
+                if (!contains) {
+                    CharString texturePath = CharString("content\\textures\\") + (sourceName.empty() ? textureName : sourceName);
 
-            const bool contains = mModelTextures->ContainsKey(texNameManaged);
-            if (!contains) {
-                CharString texturePath = CharString("content\\textures\\") + (sourceName.empty() ? textureName : sourceName);
+                    CharString texturePathBest = texturePath + ".512";
+                    size_t textureIdx = mVFXReader->FindFile(texturePathBest);
 
-                CharString texturePathBest = texturePath + ".512";
-                size_t textureIdx = mVFXReader->FindFile(texturePathBest);
+                    if (textureIdx != MetroFile::InvalidFileIdx) {
+                        BytesArray content;
+                        if (mVFXReader->ExtractFile(textureIdx, content)) {
+                            const MetroFile& mf = mVFXReader->GetFile(textureIdx);
 
-                if (textureIdx != MetroFile::InvalidFileIdx) {
-                    BytesArray content;
-                    if (mVFXReader->ExtractFile(textureIdx, content)) {
-                        const MetroFile& mf = mVFXReader->GetFile(textureIdx);
+                            MetroTexture texture;
+                            if (texture.LoadFromData(content.data(), content.size(), mf.name)) {
+                                if (texture.GetFormat() == MetroTexture::TextureFormat::BC7) {
+                                    D3D11_TEXTURE2D_DESC desc = {};
+                                    D3D11_SUBRESOURCE_DATA subDesc = {};
 
-                        MetroTexture texture;
-                        if (texture.LoadFromData(content.data(), content.size(), mf.name)) {
-                            if (texture.GetFormat() == MetroTexture::TextureFormat::BC7) {
-                                D3D11_TEXTURE2D_DESC desc = {};
-                                D3D11_SUBRESOURCE_DATA subDesc = {};
+                                    desc.Width = scast<UINT>(texture.GetWidth());
+                                    desc.Height = scast<UINT>(texture.GetHeight());
+                                    desc.MipLevels = 1;
+                                    desc.ArraySize = 1;
+                                    desc.Format = DXGI_FORMAT_BC7_TYPELESS;
+                                    desc.SampleDesc.Count = 1;
+                                    desc.Usage = D3D11_USAGE_IMMUTABLE;
+                                    desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
 
-                                desc.Width = scast<UINT>(texture.GetWidth());
-                                desc.Height = scast<UINT>(texture.GetHeight());
-                                desc.MipLevels = 1;
-                                desc.ArraySize = 1;
-                                desc.Format = DXGI_FORMAT_BC7_TYPELESS;
-                                desc.SampleDesc.Count = 1;
-                                desc.Usage = D3D11_USAGE_IMMUTABLE;
-                                desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+                                    const UINT numBlocksW = (desc.Width + 3) / 4;
+                                    const UINT numBlocksH = (desc.Height + 3) / 4;
 
-                                const UINT numBlocksW = (desc.Width + 3) / 4;
-                                const UINT numBlocksH = (desc.Height + 3) / 4;
+                                    subDesc.pSysMem = texture.GetRawData();
+                                    subDesc.SysMemPitch = numBlocksW * 16;
+                                    subDesc.SysMemSlicePitch = subDesc.SysMemPitch * numBlocksH;
 
-                                subDesc.pSysMem = texture.GetRawData();
-                                subDesc.SysMemPitch = numBlocksW * 16;
-                                subDesc.SysMemSlicePitch = subDesc.SysMemPitch * numBlocksH;
+                                    ID3D11Texture2D* texture = nullptr;
+                                    pin_ptr<ID3D11Texture2D*> texPtr(&texture);
+                                    HRESULT hr = mDevice->CreateTexture2D(&desc, &subDesc, texPtr);
+                                    if (SUCCEEDED(hr)) {
+                                        D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+                                        srvDesc.Format = DXGI_FORMAT_BC7_UNORM;
+                                        srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+                                        srvDesc.Texture2D.MipLevels = 1;
+                                        srvDesc.Texture2D.MostDetailedMip = 0;
 
-                                ID3D11Texture2D* texture = nullptr;
-                                pin_ptr<ID3D11Texture2D*> texPtr(&texture);
-                                HRESULT hr = mDevice->CreateTexture2D(&desc, &subDesc, texPtr);
-                                if (SUCCEEDED(hr)) {
-                                    D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-                                    srvDesc.Format = DXGI_FORMAT_BC7_UNORM;
-                                    srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
-                                    srvDesc.Texture2D.MipLevels = 1;
-                                    srvDesc.Texture2D.MostDetailedMip = 0;
+                                        ID3D11ShaderResourceView* textureSRV = nullptr;
+                                        pin_ptr<ID3D11ShaderResourceView*> srvPtr(&textureSRV);
+                                        hr = mDevice->CreateShaderResourceView(texture, &srvDesc, srvPtr);
+                                        if (FAILED(hr)) {
+                                            SAFE_RELEASE(texture);
+                                        } else {
+                                            RenderTexture* rt = new RenderTexture;
+                                            rt->tex = texture;
+                                            rt->srv = textureSRV;
 
-                                    ID3D11ShaderResourceView* textureSRV = nullptr;
-                                    pin_ptr<ID3D11ShaderResourceView*> srvPtr(&textureSRV);
-                                    hr = mDevice->CreateShaderResourceView(texture, &srvDesc, srvPtr);
-                                    if (FAILED(hr)) {
-                                        SAFE_RELEASE(texture);
-                                    } else {
-                                        RenderTexture* rt = new RenderTexture;
-                                        rt->tex = texture;
-                                        rt->srv = textureSRV;
-
-                                        rg->texture = rt;
-                                        mModelTextures->Add(texNameManaged, IntPtr(rt));
+                                            rg->texture = rt;
+                                            mModelTextures->Add(texNameManaged, IntPtr(rt));
+                                        }
                                     }
                                 }
                             }
                         }
                     }
+                } else {
+                    rg->texture = rcast<RenderTexture*>(mModelTextures[texNameManaged].ToPointer());
                 }
-            } else {
-                rg->texture = rcast<RenderTexture*>(mModelTextures[texNameManaged].ToPointer());
             }
         }
     }
@@ -474,16 +481,18 @@ namespace MetroEX {
 
             if (mModelGeometries) {
                 for each (RenderGeometry* rg in mModelGeometries) {
-                    ID3D11ShaderResourceView* texSRV = (rg->texture) ? rg->texture->srv : nullptr;
-                    pin_ptr<ID3D11ShaderResourceView*> srvPtr(&texSRV);
-                    mDeviceContext->PSSetShaderResources(0, 1, srvPtr);
+                    if (rg) {
+                        ID3D11ShaderResourceView* texSRV = (rg->texture) ? rg->texture->srv : nullptr;
+                        pin_ptr<ID3D11ShaderResourceView*> srvPtr(&texSRV);
+                        mDeviceContext->PSSetShaderResources(0, 1, srvPtr);
 
-                    const UINT stride = sizeof(MetroVertex);
-                    const UINT offset = 0;
-                    mDeviceContext->IASetVertexBuffers(0, 1, &rg->vb, &stride, &offset);
-                    mDeviceContext->IASetIndexBuffer(rg->ib, DXGI_FORMAT_R16_UINT, 0);
+                        const UINT stride = sizeof(MetroVertex);
+                        const UINT offset = 0;
+                        mDeviceContext->IASetVertexBuffers(0, 1, &rg->vb, &stride, &offset);
+                        mDeviceContext->IASetIndexBuffer(rg->ib, DXGI_FORMAT_R16_UINT, 0);
 
-                    mDeviceContext->DrawIndexed(scast<UINT>(rg->numFaces * 3), 0, 0);
+                        mDeviceContext->DrawIndexed(scast<UINT>(rg->numFaces * 3), 0, 0);
+                    }
                 }
             }
 

@@ -3,7 +3,17 @@
 
 class MetroReflectionReader;
 
-struct MetroBone {
+struct ParentMapped {   // 48 bytes
+    RefString   parent_bone;
+    RefString   self_bone;
+    quat        q;
+    vec3        t;
+    vec3        s;
+
+    void Serialize(MetroReflectionReader& s);
+};
+
+struct MetroBone {      // 38 bytes
     static const size_t InvalidIdx = ~0;
 
     RefString   name;
@@ -43,7 +53,7 @@ private:
     RefString           motions;            // string
     RefString           source_info;        // string
     RefString           parent_skeleton;    // string
-    Array<uint32_t>     parent_bone_maps;   //
+    Array<ParentMapped> parent_bone_maps;
     Array<MetroBone>    bones;
 
     StringArray         mStringsDict;

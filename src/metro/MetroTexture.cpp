@@ -163,6 +163,8 @@ bool MetroTexture::SaveAsTGA(const fs::path& filePath) {
             file.write(pixels, pitch);
             pixels -= pitch;
         }
+
+        result = true;
     }
 
     return result;

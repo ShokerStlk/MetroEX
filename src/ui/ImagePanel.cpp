@@ -13,6 +13,7 @@ namespace MetroEX {
         mBackgroundBrush = gcnew TextureBrush(%bmp);
 
         mPanning = false;
+        mTransparencyEnabled = true;
         mImage = nullptr;
 
         InitializeComponent();
@@ -49,17 +50,21 @@ namespace MetroEX {
         this->Invalidate();
     }
 
+    void ImagePanel::EnableTransparency(const bool enable) {
+        if (mTransparencyEnabled != enable) {
+            mTransparencyEnabled = enable;
+            this->Invalidate();
+        }
+    }
+
 
     void ImagePanel::OnPaint(System::Windows::Forms::PaintEventArgs^ e) {
         int left = this->Padding.Left;
         int top = this->Padding.Top;
 
         // background
-        if (mImage != nullptr) {
-            Rectangle rc;
-            rc.Location = Point(left, top);
-            rc.Size = mImage->Size;
-            e->Graphics->FillRectangle(mBackgroundBrush, rc);
+        if (mImage != nullptr && mTransparencyEnabled) {
+            e->Graphics->FillRectangle(mBackgroundBrush, this->ClientRectangle);
         } else {
             e->Graphics->FillRectangle(Brushes::White, this->ClientRectangle);
         }
@@ -69,6 +74,12 @@ namespace MetroEX {
             if (this->AutoScroll) {
                 left += this->AutoScrollPosition.X;
                 top += this->AutoScrollPosition.Y;
+            }
+
+            if (!mTransparencyEnabled) {
+                e->Graphics->CompositingMode = System::Drawing::Drawing2D::CompositingMode::SourceCopy;
+            } else {
+                e->Graphics->CompositingMode = System::Drawing::Drawing2D::CompositingMode::SourceOver;
             }
 
             e->Graphics->DrawImageUnscaled(mImage, left, top);

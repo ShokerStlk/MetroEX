@@ -20,11 +20,9 @@ bool VFXReader::LoadFromFile(const fs::path& filePath) {
         BytesArray fileData;
 
         file.seekg(0, std::ios::end);
-        fileData.reserve(file.tellg());
+        fileData.resize(file.tellg());
         file.seekg(0, std::ios::beg);
-
-        fileData.assign(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>());
-
+        file.read(rcast<char*>(fileData.data()), fileData.size());
         file.close();
 
         MemStream stream(fileData.data(), fileData.size());
@@ -32,12 +30,12 @@ bool VFXReader::LoadFromFile(const fs::path& filePath) {
         auto readCharStringXored = [&stream]() -> CharString {
             CharString result;
 
-            const uint16_t CharStringHeader = stream.ReadTyped<uint16_t>();
-            const size_t CharStringLen = (CharStringHeader & 0xFF);
-            const char xorMask = scast<char>((CharStringHeader >> 8) & 0xFF);
+            const uint16_t stringHeader = stream.ReadTyped<uint16_t>();
+            const size_t stringLen = (stringHeader & 0xFF);
+            const char xorMask = scast<char>((stringHeader >> 8) & 0xFF);
 
-            result.reserve(CharStringLen);
-            for (size_t i = 1; i < CharStringLen; ++i) {
+            result.reserve(stringLen);
+            for (size_t i = 1; i < stringLen; ++i) {
                 const char ch = stream.ReadTyped<char>();
                 result.push_back(ch ^ xorMask);
             }
@@ -84,9 +82,6 @@ bool VFXReader::LoadFromFile(const fs::path& filePath) {
                         mf.sizeUncompressed = stream.ReadTyped<uint32_t>();
                         mf.sizeCompressed = stream.ReadTyped<uint32_t>();
                         mf.name = readCharStringXored();
-
-                        //Pak& pak = mPaks[mf.pakIdx];
-                        //pak.files.push_back(fileIdx);
                     } break;
 
                     case MetroFile::FT_Dir:

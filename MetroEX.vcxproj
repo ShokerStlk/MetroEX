@@ -72,6 +72,10 @@
       <PreprocessorDefinitions>NDEBUG;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(SolutionDir)src;$(SolutionDir)libs\glm;$(SolutionDir)libs\stb;$(SolutionDir)libs\lz4;$(SolutionDir)libs\bc7enc16;$(SolutionDir)libs\xxhash;$(SolutionDir)libs\fbx\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <DebugInformationFormat>None</DebugInformationFormat>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <WholeProgramOptimization>true</WholeProgramOptimization>
     </ClCompile>
     <Link>
       <AdditionalDependencies>Ole32.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -103,6 +107,7 @@
     <ClCompile Include="src\Application.cpp" />
     <ClCompile Include="src\dds_utils.cpp" />
     <ClCompile Include="src\hashing.cpp" />
+    <ClCompile Include="src\metro\MetroConfigDatabase.cpp" />
     <ClCompile Include="src\metro\MetroLevel.cpp" />
     <ClCompile Include="src\metro\MetroModel.cpp" />
     <ClCompile Include="src\metro\MetroReflection.cpp" />
@@ -124,6 +129,7 @@
     <ClInclude Include="libs\xxhash\xxhash.h" />
     <ClInclude Include="src\dds_utils.h" />
     <ClInclude Include="src\hashing.h" />
+    <ClInclude Include="src\metro\MetroConfigDatabase.h" />
     <ClInclude Include="src\metro\MetroLevel.h" />
     <ClInclude Include="src\metro\MetroModel.h" />
     <ClInclude Include="src\metro\MetroReflection.h" />

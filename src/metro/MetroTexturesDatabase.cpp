@@ -72,7 +72,12 @@ MetroTexturesDatabase::~MetroTexturesDatabase() {
 bool MetroTexturesDatabase::LoadFromData(const void* data, const size_t length) {
     MemStream stream(data, length);
 
-    const size_t numEntries = stream.ReadTyped<uint32_t>();
+    size_t numEntries = stream.ReadTyped<uint32_t>();
+    if (numEntries == 0x52455641) { // AVER
+        stream.SkipBytes(2);
+        numEntries = stream.ReadTyped<uint32_t>();
+    }
+
     mDatabase.reserve(numEntries);
     mPool.resize(numEntries);
 

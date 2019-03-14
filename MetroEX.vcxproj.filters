@@ -61,6 +61,9 @@
     <ClCompile Include="src\ui\AboutDlg.cpp">
       <Filter>src\ui</Filter>
     </ClCompile>
+    <ClCompile Include="src\metro\MetroConfigDatabase.cpp">
+      <Filter>src\metro</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ui\RenderPanel.h">
@@ -128,6 +131,9 @@
     </ClInclude>
     <ClInclude Include="src\ui\AboutDlg.h">
       <Filter>src\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="src\metro\MetroConfigDatabase.h">
+      <Filter>src\metro</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

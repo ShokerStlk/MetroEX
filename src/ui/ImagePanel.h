@@ -22,6 +22,8 @@ namespace MetroEX {
 
         void SetTexture(MetroTexture* texture);
 
+        void EnableTransparency(const bool enable);
+
     protected:
         ~ImagePanel() {
             if (components) {
@@ -50,6 +52,7 @@ namespace MetroEX {
         System::Drawing::Point  mStartMousePos;
         System::Drawing::Point  mStartScrollPosition;
         bool                    mPanning;
+        bool                    mTransparencyEnabled;
 
         System::ComponentModel::Container ^components;
 

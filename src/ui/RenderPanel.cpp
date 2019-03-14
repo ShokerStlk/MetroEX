@@ -266,7 +266,7 @@ namespace MetroEX {
     }
 
     void RenderPanel::UpdateModelMatrix() {
-        mConstantBufferData->matModel = MatRotate(Deg2Rad(mViewingParams->rotation.x), 0.0f, 1.0f, 0.0f) * MatRotate(Deg2Rad(mViewingParams->rotation.y), 0.0f, 0.0f, 1.0f);
+        mConstantBufferData->matModel = MatRotate(Deg2Rad(mViewingParams->rotation.x), 0.0f, 1.0f, 0.0f) * MatRotate(-Deg2Rad(mViewingParams->rotation.y), 0.0f, 0.0f, 1.0f);
         mConstantBufferData->matModel[3] = vec4(mViewingParams->offset.x, mViewingParams->offset.y, 0.0f, 1.0f);
     }
 

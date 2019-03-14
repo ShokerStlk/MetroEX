@@ -76,3 +76,7 @@ uint32_t Hash_CalculateCRC32(const uint8_t* data, const size_t dataLength) {
 
     return (result ^ (~0u));
 }
+
+uint32_t Hash_CalculateCRC32(const CharString& str) {
+    return Hash_CalculateCRC32(rcast<const uint8_t*>(str.data()), str.length());
+}

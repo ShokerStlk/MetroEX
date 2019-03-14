@@ -1,5 +1,6 @@
 #include "metro/VFXReader.h"
 #include "metro/MetroTexturesDatabase.h"
+#include "metro/MetroConfigDatabase.h"
 #include "metro/MetroTexture.h"
 #include "metro/MetroModel.h"
 #include "metro/MetroSound.h"
@@ -22,6 +23,20 @@ static const int kImageIdxFoldeOpen     = 2;
 
 
 namespace MetroEX {
+    ref class NodeSorter : public System::Collections::IComparer {
+    public:
+        virtual int Compare(Object^ x, Object^ y) {
+            System::Windows::Forms::TreeNode^ left = safe_cast<System::Windows::Forms::TreeNode^>(x);
+            System::Windows::Forms::TreeNode^ right = safe_cast<System::Windows::Forms::TreeNode^>(y);
+
+            if (left->Nodes->Count) {
+                return (right->Nodes->Count > 0) ? left->Text->CompareTo(right->Text) : false;
+            } else {
+                return (right->Nodes->Count > 0) ? true : left->Text->CompareTo(right->Text);
+            }
+        }
+    };
+
     static FileType DetectFileType(const MetroFile& mf) {
         FileType result = FileType::Unknown;
 
@@ -79,7 +94,8 @@ namespace MetroEX {
         mRenderPanel->Hide();
     }
 
-    void MainForm::openToolStripMenuItem_Click(System::Object^, System::EventArgs^) {
+    // toolstrip buttons
+    void MainForm::toolBtnFileOpen_Click(System::Object^, System::EventArgs^) {
         OpenFileDialog ofd;
         ofd.Title = L"Open Metro Exodus vfx file...";
         ofd.Filter = L"VFX files (*.vfx)|*.vfx";
@@ -109,21 +125,36 @@ namespace MetroEX {
                         }
                     }
                 }
+
+#if 0
+                fileIdx = mVFXReader->FindFile("content\\config.bin");
+                if (MetroFile::InvalidFileIdx != fileIdx) {
+                    BytesArray content;
+                    if (mVFXReader->ExtractFile(fileIdx, content)) {
+                        MetroConfigDatabase configs;
+                        configs.LoadFromData(content.data(), content.size());
+                    }
+                }
+#endif
             }
         }
     }
 
-    void MainForm::closeToolStripMenuItem_Click(System::Object^, System::EventArgs^) {
-        this->Close();
-    }
-
-    void MainForm::aboutToolStripMenuItem_Click(System::Object^, System::EventArgs^) {
+    void MainForm::toolBtnAbout_Click(System::Object^, System::EventArgs^) {
         AboutDlg dlg;
         dlg.Icon = this->Icon;
         dlg.Text = this->Text;
         dlg.ShowDialog(this);
     }
 
+    void MainForm::toolBtnImgEnableAlpha_Click(System::Object^, System::EventArgs^) {
+        if (mImagePanel) {
+            toolBtnImgEnableAlpha->Checked = !toolBtnImgEnableAlpha->Checked;
+            mImagePanel->EnableTransparency(toolBtnImgEnableAlpha->Checked);
+        }
+    }
+
+    // treeview
     void MainForm::treeView1_AfterSelect(System::Object^, System::Windows::Forms::TreeViewEventArgs^ e) {
         const size_t fileIdx = safe_cast<size_t>(e->Node->Tag);
 
@@ -337,6 +368,9 @@ namespace MetroEX {
     }
 
     void MainForm::UpdateFilesList() {
+        this->treeView1->SuspendLayout();
+        this->treeView1->Sorted = false;
+        this->treeView1->TreeViewNodeSorter = nullptr;
         this->treeView1->Nodes->Clear();
 
         if (mVFXReader) {
@@ -363,6 +397,10 @@ namespace MetroEX {
                 }
             }
         }
+
+        this->treeView1->Sorted = true;
+        this->treeView1->TreeViewNodeSorter = gcnew NodeSorter();
+        this->treeView1->ResumeLayout();
     }
 
     void MainForm::AddFoldersRecursive(const MetroFile& dir, const size_t folderIdx, TreeNode^ rootItem) {

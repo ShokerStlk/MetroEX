@@ -14,6 +14,6 @@ private:
         size_t  length;
     };
 
-    Array<uint8_t>              mData;
-    Dict<uint32_t, ConfigInfo>  mConfigs;
+    MyArray<uint8_t>              mData;
+    MyDict<uint32_t, ConfigInfo>  mConfigs;
 };

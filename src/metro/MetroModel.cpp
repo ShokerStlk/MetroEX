@@ -199,10 +199,10 @@ bool MetroModel::SaveAsOBJ(const fs::path& filePath, VFXReader* vfxReader, Metro
 }
 
 struct ClusterInfo {
-    Array<int>      vertexIdxs;
-    Array<float>    weigths;
+    MyArray<int>      vertexIdxs;
+    MyArray<float>    weigths;
 };
-void CollectClusters(const MetroMesh* mesh, const MetroSkeleton* skeleton, Array<ClusterInfo>& clusters) {
+void CollectClusters(const MetroMesh* mesh, const MetroSkeleton* skeleton, MyArray<ClusterInfo>& clusters) {
     const size_t numBones = skeleton->GetNumBones();
     clusters.resize(numBones);
 
@@ -237,7 +237,7 @@ static FbxVector4 MetroRotToFbxRot(const quat& q) {
 }
 
 
-FbxNode* CreateFBXSkeleton(FbxScene* scene, const MetroSkeleton* skeleton, Array<FbxNode*>& boneNodes) {
+FbxNode* CreateFBXSkeleton(FbxScene* scene, const MetroSkeleton* skeleton, MyArray<FbxNode*>& boneNodes) {
     const size_t numBones = skeleton->GetNumBones();
     boneNodes.reserve(numBones);
 
@@ -292,7 +292,7 @@ bool MetroModel::SaveAsFBX(const fs::path& filePath, VFXReader* vfxReader, Metro
 
     FbxScene* scene = FbxScene::Create(mgr, "Metro model");
 
-    Dict<CharString, FbxSurfacePhong*> fbxMaterials;
+    MyDict<CharString, FbxSurfacePhong*> fbxMaterials;
     for (size_t i = 0; i < mMeshes.size(); ++i) {
         const MetroMesh* mesh = mMeshes[i];
         if (!mesh->vertices.empty() && !mesh->faces.empty()) {
@@ -350,8 +350,8 @@ bool MetroModel::SaveAsFBX(const fs::path& filePath, VFXReader* vfxReader, Metro
         }
     }
 
-    Array<FbxNode*> meshNodes;
-    Array<FbxMesh*> fbxMeshes;
+    MyArray<FbxNode*> meshNodes;
+    MyArray<FbxMesh*> fbxMeshes;
     for (size_t i = 0; i < mMeshes.size(); ++i) {
         const MetroMesh* mesh = this->GetMesh(i);
         CharString meshName = CharString("mesh_") + std::to_string(i);
@@ -408,7 +408,7 @@ bool MetroModel::SaveAsFBX(const fs::path& filePath, VFXReader* vfxReader, Metro
     }
 
     if (mSkeleton) {
-        Array<FbxNode*> boneNodes;
+        MyArray<FbxNode*> boneNodes;
         FbxNode* rootBoneNode = CreateFBXSkeleton(scene, mSkeleton, boneNodes);
         scene->GetRootNode()->AddChild(rootBoneNode);
 
@@ -427,7 +427,7 @@ bool MetroModel::SaveAsFBX(const fs::path& filePath, VFXReader* vfxReader, Metro
 
             FbxAMatrix meshXMatrix = meshNode->EvaluateGlobalTransform();
 
-            Array<ClusterInfo> clusters;
+            MyArray<ClusterInfo> clusters;
             CollectClusters(mesh, mSkeleton, clusters);
 
             FbxSkin* skin = FbxSkin::Create(scene, "");

@@ -18,14 +18,12 @@
 namespace fs = std::filesystem;
 
 template <typename T>
-using Array = std::vector<T>;
-template <typename T1, typename T2>
-using Pair = std::pair<T1, T2>;
+using MyArray = std::vector<T>;
 template <typename K, typename T>
-using Dict = std::unordered_map<K, T>;
+using MyDict = std::unordered_map<K, T>;
 using CharString = std::string;
-using StringArray = Array<CharString>;
-using BytesArray = Array<uint8_t>;
+using StringArray = MyArray<CharString>;
+using BytesArray = MyArray<uint8_t>;
 
 
 #define rcast reinterpret_cast

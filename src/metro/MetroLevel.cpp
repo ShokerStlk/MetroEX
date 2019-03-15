@@ -40,7 +40,7 @@ bool MetroLevel::LoadFromData(const uint8_t* data, const size_t length, VFXReade
                 const size_t descriptionFileIdx = vfxReader->FindFile(partName, folder);
                 const size_t geometryFileIdx = vfxReader->FindFile(partName + ".geom_pc", folder);
                 if (MetroFile::InvalidFileIdx != descriptionFileIdx && MetroFile::InvalidFileIdx != geometryFileIdx) {
-                    Array<GeomObjectInfo> infos;
+                    MyArray<GeomObjectInfo> infos;
                     BytesArray content;
                     if (vfxReader->ExtractFile(descriptionFileIdx, content)) {
                         this->ReadGeometryDescription(content.data(), content.size(), infos);
@@ -69,7 +69,7 @@ const MetroMesh* MetroLevel::GetMesh(const size_t idx) const {
 }
 
 
-void MetroLevel::ReadGeometryDescription(const uint8_t* data, const size_t length, Array<GeomObjectInfo>& infos) {
+void MetroLevel::ReadGeometryDescription(const uint8_t* data, const size_t length, MyArray<GeomObjectInfo>& infos) {
     MemStream stream(data, length);
 
     stream.SkipBytes(20); // unknown
@@ -111,12 +111,12 @@ void MetroLevel::ReadGeomObjectInfo(MemStream& stream, GeomObjectInfo& info) {
     }
 }
 
-void MetroLevel::ReadLevelGeometry(const uint8_t* data, const size_t length, const Array<GeomObjectInfo>& infos) {
+void MetroLevel::ReadLevelGeometry(const uint8_t* data, const size_t length, const MyArray<GeomObjectInfo>& infos) {
     MemStream stream(data, length);
 
     stream.SkipBytes(24); // some header ???
 
-    Array<MetroMesh*> meshes(infos.size());
+    MyArray<MetroMesh*> meshes(infos.size());
     for (MetroMesh*& m : meshes) {
         m = new MetroMesh();
         m->scales = vec3(1.0f);

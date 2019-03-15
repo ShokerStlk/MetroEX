@@ -25,10 +25,10 @@ public:
     const MetroMesh*    GetMesh(const size_t idx) const;
 
 private:
-    void                ReadGeometryDescription(const uint8_t* data, const size_t length, Array<GeomObjectInfo>& infos);
+    void                ReadGeometryDescription(const uint8_t* data, const size_t length, MyArray<GeomObjectInfo>& infos);
     void                ReadGeomObjectInfo(MemStream& stream, GeomObjectInfo& info);
-    void                ReadLevelGeometry(const uint8_t* data, const size_t length, const Array<GeomObjectInfo>& infos);
+    void                ReadLevelGeometry(const uint8_t* data, const size_t length, const MyArray<GeomObjectInfo>& infos);
 
 private:
-    Array<MetroMesh*>   mMeshes;
+    MyArray<MetroMesh*>   mMeshes;
 };

@@ -64,6 +64,9 @@
     <ClCompile Include="src\metro\MetroConfigDatabase.cpp">
       <Filter>src\metro</Filter>
     </ClCompile>
+    <ClCompile Include="src\ui\SoundPanel.cpp">
+      <Filter>src\ui</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ui\RenderPanel.h">
@@ -135,9 +138,13 @@
     <ClInclude Include="src\metro\MetroConfigDatabase.h">
       <Filter>src\metro</Filter>
     </ClInclude>
+    <ClInclude Include="src\ui\SoundPanel.h">
+      <Filter>src\ui</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="src\ui\ImagePanel.resx" />
+    <EmbeddedResource Include="src\ui\SoundPanel.resx" />
     <EmbeddedResource Include="src\ui\MainForm.resx" />
     <EmbeddedResource Include="src\ui\ExtractionOptionsDgl.resx" />
     <EmbeddedResource Include="src\ui\AboutDlg.resx" />

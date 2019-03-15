@@ -7,6 +7,7 @@
 
 #include "RenderPanel.h"
 #include "ImagePanel.h"
+#include "SoundPanel.h"
 
 class VFXReader;
 class MetroTexturesDatabase;
@@ -57,6 +58,7 @@ namespace MetroEX {
         MainForm() {
             mImagePanel = nullptr;
             mRenderPanel = nullptr;
+            mSoundPanel = nullptr;
             mVFXReader = nullptr;
 
             mExtractionCtx = new FileExtractionCtx;
@@ -75,6 +77,7 @@ namespace MetroEX {
     private:
         MetroEX::ImagePanel^        mImagePanel;
         MetroEX::RenderPanel^       mRenderPanel;
+        MetroEX::SoundPanel^        mSoundPanel;
 
         //
         VFXReader*                  mVFXReader;
@@ -123,15 +126,6 @@ namespace MetroEX {
     private: System::Windows::Forms::ToolStripSeparator^  toolStripSeparator2;
     private: System::Windows::Forms::ToolStripButton^  toolBtnImgEnableAlpha;
     private: System::Windows::Forms::ToolStripSeparator^  toolStripSeparator1;
-
-
-
-
-
-
-
-
-
 
 
     private: System::ComponentModel::IContainer^  components;
@@ -509,6 +503,7 @@ namespace MetroEX {
         void DetectFileAndShow(const size_t fileIdx);
         void ShowTexture(const size_t fileIdx);
         void ShowModel(const size_t fileIdx);
+        void ShowSound(const size_t fileIdx);
 
         // extraction
         CharString MakeFileOutputName(const MetroFile& mf, const FileExtractionCtx& ctx);

@@ -26,7 +26,7 @@ private:
 private:
     AABBox              mBBox;
     vec4                mBSphere;
-    Array<MetroMesh*>   mMeshes;
+    MyArray<MetroMesh*>   mMeshes;
     MetroSkeleton*      mSkeleton;
 
     // these are temp pointers, invalid after loading

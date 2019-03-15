@@ -17,6 +17,7 @@ struct MetroFile {
     }
 
     // common fields
+    size_t      idx;
     FileType    type;
     CharString  name;
 
@@ -65,8 +66,8 @@ struct MetroMesh {
     size_t              type;
     size_t              idx;
     StringArray         materials;
-    Array<MetroFace>    faces;
-    Array<MetroVertex>  vertices;
+    MyArray<MetroFace>    faces;
+    MyArray<MetroVertex>  vertices;
     BytesArray          bonesRemap;
 };
 

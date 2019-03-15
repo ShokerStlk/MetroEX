@@ -21,6 +21,9 @@ static const int kImageIdxFile          = 0;
 static const int kImageIdxFoldeClosed   = 1;
 static const int kImageIdxFoldeOpen     = 2;
 
+static const size_t kFileIdxMask        = size_t(~0) >> 1;
+static const size_t kFolderSortedFlag   = size_t(1) << ((sizeof(size_t) * 8) - 1);
+
 
 namespace MetroEX {
     ref class NodeSorter : public System::Collections::IComparer {
@@ -30,9 +33,9 @@ namespace MetroEX {
             System::Windows::Forms::TreeNode^ right = safe_cast<System::Windows::Forms::TreeNode^>(y);
 
             if (left->Nodes->Count) {
-                return (right->Nodes->Count > 0) ? left->Text->CompareTo(right->Text) : false;
+                return (right->Nodes->Count > 0) ? left->Text->CompareTo(right->Text) : -1;
             } else {
-                return (right->Nodes->Count > 0) ? true : left->Text->CompareTo(right->Text);
+                return (right->Nodes->Count > 0) ? 1 : left->Text->CompareTo(right->Text);
             }
         }
     };
@@ -79,9 +82,16 @@ namespace MetroEX {
         mImagePanel->AutoScroll = true;
 
 
+        mSoundPanel = gcnew SoundPanel();
+        this->splitContainer1->Panel2->Controls->Add(mSoundPanel);
+        mSoundPanel->Dock = System::Windows::Forms::DockStyle::Fill;
+        mSoundPanel->Location = System::Drawing::Point(0, 0);
+        mSoundPanel->Name = L"mSoundPanel";
+        mSoundPanel->Size = System::Drawing::Size(528, 386);
+
+
         mRenderPanel = gcnew RenderPanel();
         this->splitContainer1->Panel2->Controls->Add(mRenderPanel);
-
         mRenderPanel->Dock = System::Windows::Forms::DockStyle::Fill;
         mRenderPanel->Location = System::Drawing::Point(0, 0);
         mRenderPanel->Name = L"mRenderPanel";
@@ -92,6 +102,7 @@ namespace MetroEX {
         }
 
         mRenderPanel->Hide();
+        mSoundPanel->Hide();
     }
 
     // toolstrip buttons
@@ -105,6 +116,8 @@ namespace MetroEX {
             if (mVFXReader) {
                 delete mVFXReader;
             }
+
+            System::Windows::Forms::Cursor::Current = System::Windows::Forms::Cursors::WaitCursor;
 
             mVFXReader = new VFXReader();
             if (mVFXReader->LoadFromFile(marshal_as<CharString>(ofd.FileName))) {
@@ -137,6 +150,8 @@ namespace MetroEX {
                 }
 #endif
             }
+
+            System::Windows::Forms::Cursor::Current = System::Windows::Forms::Cursors::Arrow;
         }
     }
 
@@ -156,7 +171,7 @@ namespace MetroEX {
 
     // treeview
     void MainForm::treeView1_AfterSelect(System::Object^, System::Windows::Forms::TreeViewEventArgs^ e) {
-        const size_t fileIdx = safe_cast<size_t>(e->Node->Tag);
+        const size_t fileIdx = safe_cast<size_t>(e->Node->Tag) & kFileIdxMask;
 
         if (mVFXReader) {
             const MetroFile& mf = mVFXReader->GetFile(fileIdx);
@@ -184,11 +199,38 @@ namespace MetroEX {
     void MainForm::treeView1_AfterExpand(System::Object^, System::Windows::Forms::TreeViewEventArgs^ e) {
         e->Node->ImageIndex = kImageIdxFoldeOpen;
         e->Node->SelectedImageIndex = kImageIdxFoldeOpen;
+
+        const size_t tag = safe_cast<size_t>(e->Node->Tag);
+        if (0 == (tag & kFolderSortedFlag)) {
+            const size_t fileIdx = tag & kFileIdxMask;
+
+            if (e->Node->Nodes->Count > 1) {
+                System::Windows::Forms::Cursor::Current = System::Windows::Forms::Cursors::WaitCursor;
+
+                //#NOTE_SK: somehow, BeginUpdate/BeginUpdate makes it even slower, so commented out for the moment
+                //this->treeView1->BeginUpdate();
+                this->treeView1->SuspendLayout();
+                array<TreeNode^>^ nodes = gcnew array<TreeNode^>(e->Node->Nodes->Count);
+                e->Node->Nodes->CopyTo(nodes, 0);
+                NodeSorter^ sorter = gcnew NodeSorter();
+                System::Array::Sort(nodes, sorter);
+                e->Node->Nodes->Clear();
+                e->Node->Nodes->AddRange(nodes);
+                delete sorter;
+                delete nodes;
+                //this->treeView1->EndUpdate();
+                this->treeView1->ResumeLayout(false);
+
+                System::Windows::Forms::Cursor::Current = System::Windows::Forms::Cursors::Arrow;
+            }
+
+            e->Node->Tag = kFolderSortedFlag | fileIdx;
+        }
     }
 
     void MainForm::treeView1_NodeMouseClick(System::Object^, System::Windows::Forms::TreeNodeMouseClickEventArgs^ e) {
         if (e->Button == System::Windows::Forms::MouseButtons::Right) {
-            const size_t fileIdx = safe_cast<size_t>(e->Node->Tag);
+            const size_t fileIdx = safe_cast<size_t>(e->Node->Tag) & kFileIdxMask;
 
             const MetroFile& mf = mVFXReader->GetFile(fileIdx);
             const FileType fileType = DetectFileType(mf);
@@ -367,14 +409,15 @@ namespace MetroEX {
         System::Windows::Forms::MessageBox::Show(message, this->Text, buttons, mbicon);
     }
 
+    static volatile bool    sStopThreads = false;
+    static volatile size_t  sFinishedThreads = 0;
+
     void MainForm::UpdateFilesList() {
-        this->treeView1->SuspendLayout();
-        this->treeView1->Sorted = false;
-        this->treeView1->TreeViewNodeSorter = nullptr;
+        this->treeView1->BeginUpdate();
         this->treeView1->Nodes->Clear();
 
         if (mVFXReader) {
-            String^ rootName = marshal_as<String^>(mVFXReader->mFileName);
+            String^ rootName = marshal_as<String^>(mVFXReader->GetSelfName());
             TreeNode^ rootNode = this->treeView1->Nodes->Add(rootName);
             size_t rootIdx = 0;
 
@@ -382,10 +425,9 @@ namespace MetroEX {
             rootNode->SelectedImageIndex = kImageIdxFoldeClosed;
             rootNode->Tag = rootIdx;
 
-            MetroFile& rootDir = mVFXReader->mFiles.front();
-
+            const MetroFile& rootDir = mVFXReader->GetRootFolder();
             for (size_t idx = rootDir.firstFile; idx < rootDir.firstFile + rootDir.numFiles; ++idx) {
-                const MetroFile& mf = mVFXReader->mFiles[idx];
+                const MetroFile& mf = mVFXReader->GetFile(idx);
 
                 if (mf.IsFile()) {
                     TreeNode^ fileNode = rootNode->Nodes->Add(marshal_as<String^>(mf.name));
@@ -398,9 +440,7 @@ namespace MetroEX {
             }
         }
 
-        this->treeView1->Sorted = true;
-        this->treeView1->TreeViewNodeSorter = gcnew NodeSorter();
-        this->treeView1->ResumeLayout();
+        this->treeView1->EndUpdate();
     }
 
     void MainForm::AddFoldersRecursive(const MetroFile& dir, const size_t folderIdx, TreeNode^ rootItem) {
@@ -411,7 +451,7 @@ namespace MetroEX {
         dirLeafNode->Tag = folderIdx;
 
         for (size_t idx = dir.firstFile; idx < dir.firstFile + dir.numFiles; ++idx) {
-            const MetroFile& mf = mVFXReader->mFiles[idx];
+            const MetroFile& mf = mVFXReader->GetFile(idx);
 
             if (mf.IsFile()) {
                 TreeNode^ fileNode = dirLeafNode->Nodes->Add(marshal_as<String^>(mf.name));
@@ -441,6 +481,10 @@ namespace MetroEX {
                 this->ShowModel(fileIdx);
             } break;
 
+            case FileType::Sound: {
+                this->ShowSound(fileIdx);
+            } break;
+
         //case FileType::Level: {
         //    this->ShowLevel(fileIdx);
         //} break;
@@ -449,6 +493,7 @@ namespace MetroEX {
 
     void MainForm::ShowTexture(const size_t fileIdx) {
         mRenderPanel->Hide();
+        mSoundPanel->Hide();
         mImagePanel->Show();
 
         const MetroFile& mf = mVFXReader->GetFile(fileIdx);
@@ -464,6 +509,7 @@ namespace MetroEX {
 
     void MainForm::ShowModel(const size_t fileIdx) {
         mImagePanel->Hide();
+        mSoundPanel->Hide();
         mRenderPanel->Show();
 
         const MetroFile& mf = mVFXReader->GetFile(fileIdx);
@@ -474,6 +520,23 @@ namespace MetroEX {
                 mRenderPanel->SetModel(mdl, mVFXReader, mTexturesDatabase);
             } else {
                 delete mdl;
+            }
+        }
+    }
+
+    void MainForm::ShowSound(const size_t fileIdx) {
+        mImagePanel->Hide();
+        mRenderPanel->Hide();
+        mSoundPanel->Show();
+
+        const MetroFile& mf = mVFXReader->GetFile(fileIdx);
+        BytesArray modelData;
+        if (mVFXReader->ExtractFile(fileIdx, modelData)) {
+            MetroSound* snd = new MetroSound();
+            if (snd->LoadFromData(modelData.data(), modelData.size())) {
+                mSoundPanel->SetSound(snd);
+            } else {
+                delete snd;
             }
         }
     }
@@ -754,10 +817,13 @@ namespace MetroEX {
         if (!resultPath.empty()) {
             BytesArray content;
             if (mVFXReader->ExtractFile(ctx.fileIdx, content)) {
-                if (ctx.sndSaveAsOgg) {
-                    result = MetroSound::SaveDataAsOGG(content.data(), content.size(), resultPath);
-                } else {
-                    result = MetroSound::SaveDataAsWAV(content.data(), content.size(), resultPath);
+                MetroSound sound;
+                if (sound.LoadFromData(content.data(), content.size())) {
+                    if (ctx.sndSaveAsOgg) {
+                        result = sound.SaveAsOGG(resultPath);
+                    } else {
+                        result = sound.SaveAsWAV(resultPath);
+                    }
                 }
             }
         }

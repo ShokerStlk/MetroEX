@@ -137,7 +137,7 @@ bool MetroTexturesDatabase::LoadAliasesFromData(const void* data, const size_t l
     stream.SkipBytes(9);
     const size_t numAliases = stream.ReadTyped<uint32_t>();
 
-    Array<TextureAlias> aliases(numAliases);
+    MyArray<TextureAlias> aliases(numAliases);
     stream.ReadToBuffer(aliases.data(), numAliases * sizeof(TextureAlias));
 
     stream.SetCursor(chunkEnd);
@@ -151,7 +151,7 @@ bool MetroTexturesDatabase::LoadAliasesFromData(const void* data, const size_t l
     }
 
     const size_t numStrings = stream.ReadTyped<uint32_t>();
-    Array<CharString> strings(numStrings);
+    MyArray<CharString> strings(numStrings);
     for (CharString& s : strings) {
         s = stream.ReadStringZ();
     }

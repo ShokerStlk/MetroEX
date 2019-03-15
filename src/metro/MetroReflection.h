@@ -119,7 +119,7 @@ public:
     }
 
     template <typename T>
-    void ReadStructArray(const CharString& memberName, Array<T>& v) {
+    void ReadStructArray(const CharString& memberName, MyArray<T>& v) {
         if (mVerifyTypesInfo) {
             this->VerifyTypeInfo(memberName, "array");
             CharString& sectionName = this->BeginSection();
@@ -207,7 +207,7 @@ public:
 
 
 #define IMPLEMENT_TYPE_ARRAY_READ(type)     \
-    void operator >>(Array<type>& v) {      \
+    void operator >>(MyArray<type>& v) {      \
         uint32_t numElements = 0;           \
         (*this) >> numElements;               \
         v.resize(numElements);              \

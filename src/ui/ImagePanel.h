@@ -35,10 +35,10 @@ namespace MetroEX {
             }
         }
 
-        void OnPaint(System::Windows::Forms::PaintEventArgs^ e) override;
-        void OnScroll(System::Windows::Forms::ScrollEventArgs^ e) override;
-        void OnMouseMove(System::Windows::Forms::MouseEventArgs^ e) override;
-        void OnMouseUp(System::Windows::Forms::MouseEventArgs^ e) override;
+        virtual void OnPaint(System::Windows::Forms::PaintEventArgs^ e) override;
+        virtual void OnScroll(System::Windows::Forms::ScrollEventArgs^ e) override;
+        virtual void OnMouseMove(System::Windows::Forms::MouseEventArgs^ e) override;
+        virtual void OnMouseUp(System::Windows::Forms::MouseEventArgs^ e) override;
 
         void SwitchPanning(bool isPanning);
         void UpdateScrollPosition(Point position);

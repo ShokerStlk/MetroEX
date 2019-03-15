@@ -1,8 +1,6 @@
 #include "VFXReader.h"
 #include <fstream>
 
-#include "lz4.h"
-
 
 VFXReader::VFXReader() {
 
@@ -50,7 +48,7 @@ bool VFXReader::LoadFromFile(const fs::path& filePath) {
         if (version == 3) { // Metro: Exodus
             const uint32_t num1 = stream.ReadTyped<uint32_t>();
             CharString someString = stream.ReadStringZ();
-            stream.SkipBytes(16); // GUID ???
+            stream.SkipBytes(16); // ???
             const uint32_t numVFS = stream.ReadTyped<uint32_t>();
             const uint32_t numFiles = stream.ReadTyped<uint32_t>();
             const uint32_t numPatches = stream.ReadTyped<uint32_t>();
@@ -73,6 +71,7 @@ bool VFXReader::LoadFromFile(const fs::path& filePath) {
             for (MetroFile& mf : mFiles) {
                 const uint16_t entryType = stream.ReadTyped<uint16_t>();
 
+                mf.idx = fileIdx;
                 mf.type = scast<MetroFile::FileType>(entryType);
                 switch (mf.type) {
                     case MetroFile::FT_File:
@@ -145,6 +144,10 @@ bool VFXReader::ExtractFile(const size_t fileIdx, BytesArray& content) {
     return result;
 }
 
+const CharString VFXReader::GetSelfName() const {
+    return mFileName;
+}
+
 size_t VFXReader::FindFile(const CharString& fileName, const MetroFile* inFolder) const {
     size_t result = MetroFile::InvalidFileIdx;
 
@@ -181,6 +184,10 @@ size_t VFXReader::FindFile(const CharString& fileName, const MetroFile* inFolder
     }
 
     return result;
+}
+
+const MetroFile& VFXReader::GetRootFolder() const {
+    return mFiles.front();
 }
 
 const MetroFile* VFXReader::GetParentFolder(const size_t fileIdx) const {
@@ -222,7 +229,7 @@ size_t VFXReader::CountFilesInFolder(const size_t idx) const {
 static const int32_t kDecCounts[8] = { 0, 3, 2, 3, 0, 0, 0, 0 };
 static const int32_t kDecOffsets[8] = { 0, 0, 0, -1, 0, 1, 2, 3 };
 
-size_t VFXReader::Decompress(const std::vector<uint8_t>& compressedData, std::vector<uint8_t>& uncompressedData) {
+size_t VFXReader::Decompress(const BytesArray& compressedData, BytesArray& uncompressedData) {
     size_t result = 0;
 
     MemStream stream(compressedData.data(), compressedData.size());

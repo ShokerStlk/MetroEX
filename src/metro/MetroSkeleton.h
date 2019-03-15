@@ -53,8 +53,8 @@ private:
     RefString           motions;            // string
     RefString           source_info;        // string
     RefString           parent_skeleton;    // string
-    Array<ParentMapped> parent_bone_maps;
-    Array<MetroBone>    bones;
+    MyArray<ParentMapped> parent_bone_maps;
+    MyArray<MetroBone>    bones;
 
     StringArray         mStringsDict;
 };

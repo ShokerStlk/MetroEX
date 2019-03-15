@@ -59,8 +59,8 @@ struct MetroTextureInfo {
     color4f         aux_params;
     color4f         aux_params_1;
     // !!! Optional fields !!!
-    Array<uint8_t>  lum;
-    Array<float>    sph_coefs;
+    MyArray<uint8_t>  lum;
+    MyArray<float>    sph_coefs;
     ///////////////////////////
     RefString       bump_name;      // choose
     RefString       aux0_name;      // choose
@@ -89,10 +89,10 @@ public:
     const CharString&       GetBumpName(const HashString& name) const;
 
 private:
-    Array<MetroTextureInfo>             mPool;
-    Dict<HashString, MetroTextureInfo*> mDatabase;
-    Dict<HashString, MetroTextureInfo*> mDiffuseTextures;
-    Dict<HashString, MetroTextureInfo*> mNormalmapTextures;
+    MyArray<MetroTextureInfo>             mPool;
+    MyDict<HashString, MetroTextureInfo*> mDatabase;
+    MyDict<HashString, MetroTextureInfo*> mDiffuseTextures;
+    MyDict<HashString, MetroTextureInfo*> mNormalmapTextures;
 
-    Dict<HashString, HashString>        mAliases;
+    MyDict<HashString, HashString>        mAliases;
 };

@@ -5,26 +5,29 @@
 #define STB_VORBIS_NO_STDIO
 #include "stb_vorbis.h"
 
-bool MetroSound::SaveDataAsOGG(const void* data, const size_t dataLen, const fs::path& outPath) {
-    bool result = false;
 
-    std::ofstream file(outPath, std::ofstream::binary);
-    if (file.good()) {
-        file.write(rcast<const char*>(data), dataLen);
-        file.flush();
+MetroSound::MetroSound() {
 
-        result = true;
-    }
+}
+MetroSound::~MetroSound() {
 
-    return result;
 }
 
-bool MetroSound::SaveDataAsWAV(const void* data, const size_t dataLen, const fs::path& outPath) {
+bool MetroSound::LoadFromData(const void* data, const size_t dataLen) {
+    mData.resize(dataLen);
+    memcpy(mData.data(), data, dataLen);
+
+    return true;
+}
+
+bool MetroSound::GetWAVE(BytesArray& waveData) {
     bool result = false;
+
+    waveData.clear();
 
     int channels, rate;
     int16_t* pcmData = nullptr;
-    const int numPcmSamples = stb_vorbis_decode_memory(rcast<const uint8_t*>(data), scast<int>(dataLen), &channels, &rate, &pcmData);
+    const int numPcmSamples = stb_vorbis_decode_memory(mData.data(), scast<int>(mData.size()), &channels, &rate, &pcmData);
     if (numPcmSamples > 0) {
         struct {
             char     riff[4];
@@ -74,18 +77,46 @@ bool MetroSound::SaveDataAsWAV(const void* data, const size_t dataLen, const fs:
         wavhdr.data[3] = 'a';
         wavhdr.datasize = scast<uint32_t>(pcmDataSize);
 
-        std::ofstream file(outPath, std::ofstream::binary);
-        if (file.good()) {
-            file.write(rcast<const char*>(&wavhdr), sizeof(wavhdr));
-            file.write(rcast<const char*>(pcmData), pcmDataSize);
-            file.flush();
+        waveData.resize(sizeof(wavhdr) + pcmDataSize);
+        memcpy(waveData.data(), &wavhdr, sizeof(wavhdr));
+        memcpy(waveData.data() + sizeof(wavhdr), pcmData, pcmDataSize);
 
-            result = true;
-        }
+        result = true;
     }
 
     if (pcmData) {
         free(pcmData);
+    }
+
+    return result;
+}
+
+bool MetroSound::SaveAsOGG(const fs::path& outPath) {
+    bool result = false;
+
+    std::ofstream file(outPath, std::ofstream::binary);
+    if (file.good()) {
+        file.write(rcast<const char*>(mData.data()), mData.size());
+        file.flush();
+
+        result = true;
+    }
+
+    return result;
+}
+
+bool MetroSound::SaveAsWAV(const fs::path& outPath) {
+    bool result = false;
+
+    BytesArray waveData;
+    if (this->GetWAVE(waveData)) {
+        std::ofstream file(outPath, std::ofstream::binary);
+        if (file.good()) {
+            file.write(rcast<const char*>(waveData.data()), waveData.size());
+            file.flush();
+
+            result = true;
+        }
     }
 
     return result;

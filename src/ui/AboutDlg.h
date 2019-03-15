@@ -2,56 +2,56 @@
 
 namespace MetroEX {
 
-	using namespace System;
-	using namespace System::ComponentModel;
-	using namespace System::Collections;
-	using namespace System::Windows::Forms;
-	using namespace System::Data;
-	using namespace System::Drawing;
+    using namespace System;
+    using namespace System::ComponentModel;
+    using namespace System::Collections;
+    using namespace System::Windows::Forms;
+    using namespace System::Data;
+    using namespace System::Drawing;
 
-	/// <summary>
-	/// Summary for AboutDlg
-	/// </summary>
-	public ref class AboutDlg : public System::Windows::Forms::Form
-	{
-	public:
-		AboutDlg(void)
-		{
-			InitializeComponent();
-			//
-			//TODO: Add the constructor code here
-			//
-		}
+    /// <summary>
+    /// Summary for AboutDlg
+    /// </summary>
+    public ref class AboutDlg : public System::Windows::Forms::Form
+    {
+    public:
+        AboutDlg(void)
+        {
+            InitializeComponent();
+            //
+            //TODO: Add the constructor code here
+            //
+        }
 
-	protected:
-		/// <summary>
-		/// Clean up any resources being used.
-		/// </summary>
-		~AboutDlg()
-		{
-			if (components)
-			{
-				delete components;
-			}
-		}
+    protected:
+        /// <summary>
+        /// Clean up any resources being used.
+        /// </summary>
+        ~AboutDlg()
+        {
+            if (components)
+            {
+                delete components;
+            }
+        }
     private: System::Windows::Forms::PictureBox^  pictureBox1;
     private: System::Windows::Forms::RichTextBox^  richTextBox1;
     private: System::Windows::Forms::Button^  button1;
     protected:
 
-	private:
-		/// <summary>
-		/// Required designer variable.
-		/// </summary>
-		System::ComponentModel::Container ^components;
+    private:
+        /// <summary>
+        /// Required designer variable.
+        /// </summary>
+        System::ComponentModel::Container ^components;
 
 #pragma region Windows Form Designer generated code
-		/// <summary>
-		/// Required method for Designer support - do not modify
-		/// the contents of this method with the code editor.
-		/// </summary>
-		void InitializeComponent(void)
-		{
+        /// <summary>
+        /// Required method for Designer support - do not modify
+        /// the contents of this method with the code editor.
+        /// </summary>
+        void InitializeComponent(void)
+        {
             System::ComponentModel::ComponentResourceManager^  resources = (gcnew System::ComponentModel::ComponentResourceManager(AboutDlg::typeid));
             this->pictureBox1 = (gcnew System::Windows::Forms::PictureBox());
             this->richTextBox1 = (gcnew System::Windows::Forms::RichTextBox());
@@ -117,7 +117,7 @@ namespace MetroEX {
             String^ rtfText = LR"({\rtf1\ansi\ansicpg1251\deff0\nouicompat\deflang1049{\fonttbl{\f0\fnil\fcharset204 Segoe UI;}{\f1\fnil\fcharset0 Calibri;}}
 {\colortbl ;\red0\green77\blue187;\red243\green164\blue71;}
 {\*\generator Riched20 10.0.17763}\viewkind4\uc1 
-\pard\qc\cf1\b\f0\fs18 MetroEX\cf0\b0  v0.29\par
+\pard\qc\cf1\b\f0\fs18 MetroEX\cf0\b0  v0.29a\par
 \par
 Created by Sergii "\cf2 iOrange\cf0 " Kudlai\par
 \par
@@ -127,9 +127,9 @@ Created by Sergii "\cf2 iOrange\cf0 " Kudlai\par
  )";
 
             array<Byte>^ byteArray = System::Text::Encoding::ASCII->GetBytes(rtfText);
-            System::IO::MemoryStream^ stream = gcnew System::IO::MemoryStream(byteArray);
+            System::IO::MemoryStream stream(byteArray);
 
-            this->richTextBox1->LoadFile(stream, RichTextBoxStreamType::RichText);
+            this->richTextBox1->LoadFile(%stream, RichTextBoxStreamType::RichText);
         }
     };
 }

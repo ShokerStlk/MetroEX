@@ -5,6 +5,7 @@ class MetroTexture {
 public:
     enum class TextureFormat : size_t {
         BC7,
+        BC6H,
         RGBA
     };
 
@@ -18,6 +19,7 @@ public:
     bool            SaveAsTGA(const fs::path& filePath);
     bool            SaveAsPNG(const fs::path& filePath);
 
+    bool            IsCubemap() const;
     size_t          GetWidth() const;
     size_t          GetHeight() const;
     size_t          GetDepth() const;
@@ -30,6 +32,7 @@ public:
 
 private:
     BytesArray      mData;
+    bool            mIsCubemap;
     size_t          mWidth;
     size_t          mHeight;
     size_t          mDepth;

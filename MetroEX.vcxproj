@@ -105,6 +105,7 @@
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="src\Application.cpp" />
+    <ClCompile Include="src\camera.cpp" />
     <ClCompile Include="src\dds_utils.cpp" />
     <ClCompile Include="src\hashing.cpp" />
     <ClCompile Include="src\metro\MetroConfigDatabase.cpp" />
@@ -128,6 +129,7 @@
     <ClInclude Include="libs\bc7enc16\bc7decomp.h" />
     <ClInclude Include="libs\lz4\lz4.h" />
     <ClInclude Include="libs\xxhash\xxhash.h" />
+    <ClInclude Include="src\camera.h" />
     <ClInclude Include="src\dds_utils.h" />
     <ClInclude Include="src\hashing.h" />
     <ClInclude Include="src\metro\MetroConfigDatabase.h" />
@@ -194,6 +196,26 @@
     <Image Include="mask.ico" />
   </ItemGroup>
   <ItemGroup>
+    <FxCompile Include="src\shaders\CubemapViewerPS.hlsl">
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(FullPath).h</HeaderFileOutput>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(FullPath).h</HeaderFileOutput>
+      <VariableName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">sCubemapViewerPSData</VariableName>
+      <VariableName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">sCubemapViewerPSData</VariableName>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">5.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="src\shaders\CubemapViewerVS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">5.0</ShaderModel>
+      <VariableName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">sCubemapViewerVSData</VariableName>
+      <VariableName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">sCubemapViewerVSData</VariableName>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(FullPath).h</HeaderFileOutput>
+      <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(FullPath).h</HeaderFileOutput>
+    </FxCompile>
     <FxCompile Include="src\shaders\ModelViewerPS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>

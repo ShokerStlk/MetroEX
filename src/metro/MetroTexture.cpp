@@ -12,7 +12,8 @@
 
 
 MetroTexture::MetroTexture()
-    : mWidth(0)
+    : mIsCubemap(false)
+    , mWidth(0)
     , mHeight(0)
     , mDepth(0)
     , mNumMips(0)
@@ -43,6 +44,13 @@ bool MetroTexture::LoadFromData(const uint8_t* data, const size_t length, const 
                 case DXGI_FORMAT_BC7_UNORM:
                 case DXGI_FORMAT_BC7_UNORM_SRGB: {
                     mFormat = TextureFormat::BC7;
+                } break;
+
+                case DXGI_FORMAT_BC6H_TYPELESS:
+                case DXGI_FORMAT_BC6H_SF16:
+                case DXGI_FORMAT_BC6H_UF16: {
+                    mFormat = TextureFormat::BC6H;
+                    mIsCubemap = true;
                 } break;
 
                 default:
@@ -102,7 +110,7 @@ bool MetroTexture::SaveAsDDS(const fs::path& filePath) {
 
     DDSURFACEDESC2 ddsHdr;
     DDS_HEADER_DXT10 dx10Hdr;
-    DDS_MakeDX10Headers(ddsHdr, dx10Hdr, mWidth, mHeight, mNumMips);
+    DDS_MakeDX10Headers(ddsHdr, dx10Hdr, mWidth, mHeight, mNumMips, mIsCubemap);
 
     std::ofstream file(filePath, std::ofstream::binary);
     if (file.good()) {
@@ -120,6 +128,11 @@ bool MetroTexture::SaveAsDDS(const fs::path& filePath) {
 //#TODO: also mips ?
 bool MetroTexture::SaveAsLegacyDDS(const fs::path& filePath) {
     bool result = false;
+
+    //#TODO: add support!
+    if (this->IsCubemap()) {
+        return false;
+    }
 
     std::ofstream file(filePath, std::ofstream::binary);
     if (file.good()) {
@@ -148,23 +161,23 @@ bool MetroTexture::SaveAsTGA(const fs::path& filePath) {
     std::ofstream file(filePath, std::ofstream::binary);
     if (file.good()) {
         BytesArray bgraPixels;
-        this->GetBGRA(bgraPixels);
+        if (this->GetBGRA(bgraPixels)) {
+            uint16_t hdr[9] = { 0 };
+            hdr[1] = 2;
+            hdr[6] = scast<uint16_t>(mWidth);
+            hdr[7] = scast<uint16_t>(mHeight);
+            hdr[8] = 32;
+            file.write(rcast<const char*>(hdr), sizeof(hdr));
 
-        uint16_t hdr[9] = { 0 };
-        hdr[1] = 2;
-        hdr[6] = scast<uint16_t>(mWidth);
-        hdr[7] = scast<uint16_t>(mHeight);
-        hdr[8] = 32;
-        file.write(rcast<const char*>(hdr), sizeof(hdr));
+            const size_t pitch = mWidth * 4;
+            const char* pixels = rcast<const char*>(bgraPixels.data()) + (pitch * (mHeight - 1));
+            for (size_t y = 0; y < mHeight; ++y) {
+                file.write(pixels, pitch);
+                pixels -= pitch;
+            }
 
-        const size_t pitch = mWidth * 4;
-        const char* pixels = rcast<const char*>(bgraPixels.data()) + (pitch * (mHeight - 1));
-        for (size_t y = 0; y < mHeight; ++y) {
-            file.write(pixels, pitch);
-            pixels -= pitch;
+            result = true;
         }
-
-        result = true;
     }
 
     return result;
@@ -176,17 +189,21 @@ bool MetroTexture::SaveAsPNG(const fs::path& filePath) {
     std::ofstream file(filePath, std::ofstream::binary);
     if (file.good()) {
         BytesArray rgbaPixels;
-        this->GetRGBA(rgbaPixels);
+        if (this->GetRGBA(rgbaPixels)) {
+            const int success = stbi_write_png_to_func([](void* ptr, void* data, int size) {
+                std::ofstream* filePtr = rcast<std::ofstream*>(ptr);
+                filePtr->write(rcast<const char*>(data), size);
+            }, &file, scast<int>(mWidth), scast<int>(mHeight), 4, rgbaPixels.data(), 0);
 
-        const int success = stbi_write_png_to_func([](void* ptr, void* data, int size) {
-            std::ofstream* filePtr = rcast<std::ofstream*>(ptr);
-            filePtr->write(rcast<const char*>(data), size);
-        }, &file, scast<int>(mWidth), scast<int>(mHeight), 4, rgbaPixels.data(), 0);
-
-        result = (success > 0);
+            result = (success > 0);
+        }
     }
 
     return result;
+}
+
+bool MetroTexture::IsCubemap() const {
+    return mIsCubemap;
 }
 
 size_t MetroTexture::GetWidth() const {
@@ -213,13 +230,12 @@ bool MetroTexture::GetRGBA(BytesArray& imagePixels) const {
     bool result = false;
 
     if (!mData.empty()) {
-        imagePixels.resize(mWidth * mHeight * 4);
-
+        //#TODO: add support for other formats!
         if (mFormat == TextureFormat::BC7) {
+            imagePixels.resize(mWidth * mHeight * 4);
             DDS_DecompressBC7(mData.data(), imagePixels.data(), mWidth, mHeight);
+            result = true;
         }
-
-        result = true;
     }
 
     return result;

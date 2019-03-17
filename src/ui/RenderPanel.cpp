@@ -2,15 +2,19 @@
 #pragma comment(lib, "d3d11.lib")
 
 #include "metro/MetroModel.h"
-#include "metro/MetroLevel.h"
 #include "metro/MetroTexture.h"
 #include "metro/VFXReader.h"
 #include "metro/MetroTexturesDatabase.h"
 
 #include "RenderPanel.h"
 
+// model viewer shaders
 #include "shaders/ModelViewerVS.hlsl.h"
 #include "shaders/ModelViewerPS.hlsl.h"
+
+// cubemap viewer shaders
+#include "shaders/CubemapViewerVS.hlsl.h"
+#include "shaders/CubemapViewerPS.hlsl.h"
 
 // String to std::string wrapper
 #include <msclr/marshal_cppstd.h>
@@ -36,14 +40,22 @@ namespace MetroEX {
         , mModelTextures(nullptr)
         // model viewer stuff
         , mModel(nullptr)
-        , mLevel(nullptr)
         , mVFXReader(nullptr)
         , mDatabase(nullptr)
+        // cubemap viewer stuff
+        , mCamera(nullptr)
+        , mCubemap(nullptr)
+        , mCubemapTexture(nullptr)
+        , mCubemapViewerVS(nullptr)
+        , mCubemapViewerPS(nullptr)
         //
         , mViewingParams(nullptr)
         , mConstantBufferData(nullptr)
     {
         mModelTextures = gcnew System::Collections::Generic::Dictionary<String^, IntPtr>(0);
+        mCubemapTexture = new RenderTexture;
+        mCubemapTexture->tex = nullptr;
+        mCubemapTexture->srv = nullptr;
     }
 
     bool RenderPanel::InitGraphics() {
@@ -76,13 +88,24 @@ namespace MetroEX {
         pin_ptr<IDXGISwapChain*> swapChainPtr(&mSwapChain);
         pin_ptr<ID3D11Device*> devicePtr(&mDevice);
         pin_ptr<ID3D11DeviceContext*> contextPtr(&mDeviceContext);
+
+        UINT deviceFlags = 0;
+#ifdef _DEBUG
+        deviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
+#endif
+
         result = D3D11CreateDeviceAndSwapChain(nullptr, D3D_DRIVER_TYPE_HARDWARE,
-                                               nullptr, 0, &featureLevel, 1,
+                                               nullptr, deviceFlags, &featureLevel, 1,
                                                D3D11_SDK_VERSION, &swapChainDesc,
                                                swapChainPtr, devicePtr, nullptr, contextPtr);
         if (FAILED(result)) {
             return false;
         }
+
+        mCamera = new Camera();
+        mCamera->SetViewport(ivec4(0, 0, this->Size.Width, this->Size.Height));
+        mCamera->SetViewPlanes(0.0f, 1.0f);
+        mCamera->LookAt(vec3(0.0f), vec3(0.0f, 0.0f, 1.0f));
 
         if (!this->CreateRenderTargets()) {
             return false;
@@ -170,15 +193,29 @@ namespace MetroEX {
         }
 
         D3D11_SAMPLER_DESC samplerDesc = {};
-        samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+        samplerDesc.Filter = D3D11_FILTER_ANISOTROPIC;
         samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
         samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
         samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
-        samplerDesc.MaxAnisotropy = 1;
+        samplerDesc.MaxAnisotropy = 4;
         samplerDesc.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
+        samplerDesc.MinLOD = -(std::numeric_limits<float>::max)();
+        samplerDesc.MaxLOD = (std::numeric_limits<float>::max)();
 
         pin_ptr<ID3D11SamplerState*> samplerStatePtr(&mModelTextureSampler);
         result = mDevice->CreateSamplerState(&samplerDesc, samplerStatePtr);
+        if (FAILED(result)) {
+            return false;
+        }
+
+        pin_ptr<ID3D11VertexShader*> cubeVsPtr(&mCubemapViewerVS);
+        result = mDevice->CreateVertexShader(sCubemapViewerVSData, sizeof(sCubemapViewerVSData), nullptr, cubeVsPtr);
+        if (FAILED(result)) {
+            return false;
+        }
+
+        pin_ptr<ID3D11PixelShader*> cubePsPtr(&mCubemapViewerPS);
+        result = mDevice->CreatePixelShader(sCubemapViewerPSData, sizeof(sCubemapViewerPSData), nullptr, cubePsPtr);
         if (FAILED(result)) {
             return false;
         }
@@ -187,6 +224,8 @@ namespace MetroEX {
     }
 
     void RenderPanel::SetModel(MetroModel* model, VFXReader* vfxReader, MetroTexturesDatabase* database) {
+        mCubemap = nullptr;
+
         if (mModel != model) {
             SAFE_DELETE(mModel);
 
@@ -195,10 +234,20 @@ namespace MetroEX {
             mDatabase = database;
 
             this->CreateModelGeometries();
-            this->CreateModelTextures();
+            this->CreateTextures();
             this->UpdateProjectionAndReset();
             this->Render();
         }
+    }
+
+    void RenderPanel::SetCubemap(MetroTexture* cubemap) {
+        SAFE_DELETE(mModel);
+
+        mCubemap = cubemap;
+
+        this->CreateModelGeometries();
+        this->CreateTextures();
+        this->Render();
     }
 
     bool RenderPanel::CreateRenderTargets() {
@@ -253,14 +302,16 @@ namespace MetroEX {
         mDeviceContext->OMSetRenderTargets(1, rtvPtr, mDepthStencilView);
 
         D3D11_VIEWPORT viewport = {};
-        viewport.Width = (float)this->Size.Width;
-        viewport.Height = (float)this->Size.Height;
+        viewport.Width = scast<float>(this->Size.Width);
+        viewport.Height = scast<float>(this->Size.Height);
         viewport.MinDepth = 0.0f;
         viewport.MaxDepth = 1.0f;
         viewport.TopLeftX = 0.0f;
         viewport.TopLeftY = 0.0f;
 
         mDeviceContext->RSSetViewports(1, &viewport);
+
+        mCamera->SetViewport(ivec4(0, 0, this->Size.Width, this->Size.Height));
 
         return true;
     }
@@ -295,7 +346,7 @@ namespace MetroEX {
     }
 
     void RenderPanel::CreateModelGeometries() {
-        if (!mModel || !mDevice) {
+        if (!mDevice) {
             return;
         }
 
@@ -309,6 +360,10 @@ namespace MetroEX {
             }
 
             SAFE_DELETE(mModelGeometries);
+        }
+
+        if (!mModel) {
+            return;
         }
 
         const size_t numMeshes = mModel->GetNumMeshes();
@@ -361,17 +416,23 @@ namespace MetroEX {
         }
     }
 
-    void RenderPanel::CreateModelTextures() {
-        if (!mModel || !mVFXReader) {
-            return;
-        }
-
+    void RenderPanel::CreateTextures() {
         for each (IntPtr ptr in mModelTextures->Values) {
             RenderTexture* rt = rcast<RenderTexture*>(ptr.ToPointer());
             SAFE_RELEASE(rt->srv);
             SAFE_RELEASE(rt->tex);
         }
         mModelTextures->Clear();
+
+        SAFE_RELEASE(mCubemapTexture->srv);
+        SAFE_RELEASE(mCubemapTexture->tex);
+
+        if (mCubemap) {
+            this->CreateRenderTexture(mCubemap, mCubemapTexture);
+            return;
+        } else if (!mModel || !mVFXReader) {
+            return;
+        }
 
         const size_t numMeshes = mModel->GetNumMeshes();
         for (size_t i = 0; i < numMeshes; ++i) {
@@ -397,57 +458,74 @@ namespace MetroEX {
 
                             MetroTexture texture;
                             if (texture.LoadFromData(content.data(), content.size(), mf.name)) {
-                                if (texture.GetFormat() == MetroTexture::TextureFormat::BC7) {
-                                    D3D11_TEXTURE2D_DESC desc = {};
-                                    D3D11_SUBRESOURCE_DATA subDesc = {};
+                                RenderTexture* rt = new RenderTexture;
+                                this->CreateRenderTexture(&texture, rt);
+                                mModelTextures->Add(texNameManaged, IntPtr(rt));
 
-                                    desc.Width = scast<UINT>(texture.GetWidth());
-                                    desc.Height = scast<UINT>(texture.GetHeight());
-                                    desc.MipLevels = 1;
-                                    desc.ArraySize = 1;
-                                    desc.Format = DXGI_FORMAT_BC7_TYPELESS;
-                                    desc.SampleDesc.Count = 1;
-                                    desc.Usage = D3D11_USAGE_IMMUTABLE;
-                                    desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
-
-                                    const UINT numBlocksW = (desc.Width + 3) / 4;
-                                    const UINT numBlocksH = (desc.Height + 3) / 4;
-
-                                    subDesc.pSysMem = texture.GetRawData();
-                                    subDesc.SysMemPitch = numBlocksW * 16;
-                                    subDesc.SysMemSlicePitch = subDesc.SysMemPitch * numBlocksH;
-
-                                    ID3D11Texture2D* texture = nullptr;
-                                    pin_ptr<ID3D11Texture2D*> texPtr(&texture);
-                                    HRESULT hr = mDevice->CreateTexture2D(&desc, &subDesc, texPtr);
-                                    if (SUCCEEDED(hr)) {
-                                        D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-                                        srvDesc.Format = DXGI_FORMAT_BC7_UNORM;
-                                        srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
-                                        srvDesc.Texture2D.MipLevels = 1;
-                                        srvDesc.Texture2D.MostDetailedMip = 0;
-
-                                        ID3D11ShaderResourceView* textureSRV = nullptr;
-                                        pin_ptr<ID3D11ShaderResourceView*> srvPtr(&textureSRV);
-                                        hr = mDevice->CreateShaderResourceView(texture, &srvDesc, srvPtr);
-                                        if (FAILED(hr)) {
-                                            SAFE_RELEASE(texture);
-                                        } else {
-                                            RenderTexture* rt = new RenderTexture;
-                                            rt->tex = texture;
-                                            rt->srv = textureSRV;
-
-                                            rg->texture = rt;
-                                            mModelTextures->Add(texNameManaged, IntPtr(rt));
-                                        }
-                                    }
-                                }
+                                rg->texture = rt;
                             }
                         }
                     }
                 } else {
                     rg->texture = rcast<RenderTexture*>(mModelTextures[texNameManaged].ToPointer());
                 }
+            }
+        }
+    }
+
+    void RenderPanel::CreateRenderTexture(const MetroTexture* srcTexture, RenderTexture* rt) {
+        D3D11_TEXTURE2D_DESC desc = {};
+
+        const DXGI_FORMAT textureFormat = srcTexture->IsCubemap() ? DXGI_FORMAT_BC6H_TYPELESS : DXGI_FORMAT_BC7_TYPELESS;
+        const DXGI_FORMAT srvFormat = srcTexture->IsCubemap() ? DXGI_FORMAT_BC6H_UF16 : DXGI_FORMAT_BC7_UNORM;
+
+        desc.Width = scast<UINT>(srcTexture->GetWidth());
+        desc.Height = scast<UINT>(srcTexture->GetHeight());
+        desc.MipLevels = scast<UINT>(srcTexture->GetNumMips());
+        desc.ArraySize = srcTexture->IsCubemap() ? 6 : 1;
+        desc.Format = textureFormat;
+        desc.SampleDesc.Count = 1;
+        desc.Usage = D3D11_USAGE_IMMUTABLE;
+        desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+        if (srcTexture->IsCubemap()) {
+            desc.MiscFlags = D3D11_RESOURCE_MISC_TEXTURECUBE;
+        }
+
+        MyArray<D3D11_SUBRESOURCE_DATA> subDesc(desc.ArraySize * desc.MipLevels);
+
+        size_t counter = 0;
+        const uint8_t* dataPtr = srcTexture->GetRawData();
+        for (size_t i = 0; i < desc.ArraySize; ++i) {
+            UINT mipWidth = desc.Width;
+            UINT mipHeight = desc.Height;
+            for (size_t j = 0; j < desc.MipLevels; ++j, ++counter) {
+                const UINT numBlocksW = (mipWidth + 3) / 4;
+                const UINT numBlocksH = (mipHeight + 3) / 4;
+
+                subDesc[counter].pSysMem = dataPtr;
+                subDesc[counter].SysMemPitch = numBlocksW * 16;
+                subDesc[counter].SysMemSlicePitch = subDesc[counter].SysMemPitch * numBlocksH;
+
+                dataPtr += subDesc[counter].SysMemSlicePitch;
+
+                mipWidth >>= 1;
+                mipHeight >>= 1;
+            }
+        }
+
+        pin_ptr<ID3D11Texture2D*> texPtr(&rt->tex);
+        HRESULT hr = mDevice->CreateTexture2D(&desc, subDesc.data(), texPtr);
+        if (SUCCEEDED(hr)) {
+            D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+            srvDesc.Format = srvFormat;
+            srvDesc.ViewDimension = srcTexture->IsCubemap() ? D3D11_SRV_DIMENSION_TEXTURECUBE : D3D11_SRV_DIMENSION_TEXTURE2D;
+            srvDesc.Texture2D.MipLevels = ~0u;
+            srvDesc.Texture2D.MostDetailedMip = 0;
+
+            pin_ptr<ID3D11ShaderResourceView*> srvPtr(&rt->srv);
+            hr = mDevice->CreateShaderResourceView(rt->tex, &srvDesc, srvPtr);
+            if (FAILED(hr)) {
+                SAFE_RELEASE(rt->tex);
             }
         }
     }
@@ -459,8 +537,16 @@ namespace MetroEX {
             mDeviceContext->ClearRenderTargetView(mRenderTargetView, clearColor);
             mDeviceContext->ClearDepthStencilView(mDepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
 
-            mat4 modelView = mConstantBufferData->matView * mConstantBufferData->matModel;
-            mConstantBufferData->matModelViewProj = mConstantBufferData->matProjection * modelView;
+            if (mModel) {
+                mat4 modelView = mConstantBufferData->matView * mConstantBufferData->matModel;
+                mConstantBufferData->matModelViewProj = mConstantBufferData->matProjection * modelView;
+            } else if (mCubemap) {
+                mat4 modelView = mCamera->GetTransform();
+                mConstantBufferData->matView = modelView;
+                mConstantBufferData->matModelViewProj = mCamera->GetProjection() * modelView;
+                mConstantBufferData->camParams.x = Deg2Rad(mCamera->GetFovY());
+                mConstantBufferData->camParams.y = scast<float>(this->Size.Width) / scast<float>(this->Size.Height);
+            }
 
             D3D11_MAPPED_SUBRESOURCE subRes = {};
             mDeviceContext->Map(mModelConstantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &subRes);
@@ -469,31 +555,46 @@ namespace MetroEX {
 
             pin_ptr<ID3D11Buffer*> cbPtr(&mModelConstantBuffer);
             mDeviceContext->VSSetConstantBuffers(0, 1, cbPtr);
+            mDeviceContext->PSSetConstantBuffers(0, 1, cbPtr);
 
-            mDeviceContext->VSSetShader(mModelViewerVS, nullptr, 0);
-            mDeviceContext->PSSetShader(mModelViewerPS, nullptr, 0);
+            mDeviceContext->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
             pin_ptr<ID3D11SamplerState*> samplerPtr(&mModelTextureSampler);
             mDeviceContext->PSSetSamplers(0, 1, samplerPtr);
 
-            mDeviceContext->IASetInputLayout(mModelInputLayout);
-            mDeviceContext->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+            if (mModel) {
+                mDeviceContext->IASetInputLayout(mModelInputLayout);
+                mDeviceContext->VSSetShader(mModelViewerVS, nullptr, 0);
+                mDeviceContext->PSSetShader(mModelViewerPS, nullptr, 0);
 
-            if (mModelGeometries) {
-                for each (RenderGeometry* rg in mModelGeometries) {
-                    if (rg) {
-                        ID3D11ShaderResourceView* texSRV = (rg->texture) ? rg->texture->srv : nullptr;
-                        pin_ptr<ID3D11ShaderResourceView*> srvPtr(&texSRV);
-                        mDeviceContext->PSSetShaderResources(0, 1, srvPtr);
+                if (mModelGeometries) {
+                    for each (RenderGeometry* rg in mModelGeometries) {
+                        if (rg) {
+                            ID3D11ShaderResourceView* texSRV = (rg->texture) ? rg->texture->srv : nullptr;
+                            pin_ptr<ID3D11ShaderResourceView*> srvPtr(&texSRV);
+                            mDeviceContext->PSSetShaderResources(0, 1, srvPtr);
 
-                        const UINT stride = sizeof(MetroVertex);
-                        const UINT offset = 0;
-                        mDeviceContext->IASetVertexBuffers(0, 1, &rg->vb, &stride, &offset);
-                        mDeviceContext->IASetIndexBuffer(rg->ib, DXGI_FORMAT_R16_UINT, 0);
+                            const UINT stride = sizeof(MetroVertex);
+                            const UINT offset = 0;
+                            mDeviceContext->IASetVertexBuffers(0, 1, &rg->vb, &stride, &offset);
+                            mDeviceContext->IASetIndexBuffer(rg->ib, DXGI_FORMAT_R16_UINT, 0);
 
-                        mDeviceContext->DrawIndexed(scast<UINT>(rg->numFaces * 3), 0, 0);
+                            mDeviceContext->DrawIndexed(scast<UINT>(rg->numFaces * 3), 0, 0);
+                        }
                     }
                 }
+            } else if (mCubemap) {
+                mDeviceContext->IASetInputLayout(nullptr);
+                mDeviceContext->VSSetShader(mCubemapViewerVS, nullptr, 0);
+                mDeviceContext->PSSetShader(mCubemapViewerPS, nullptr, 0);
+
+                pin_ptr<ID3D11ShaderResourceView*> srvPtr(&mCubemapTexture->srv);
+                mDeviceContext->PSSetShaderResources(0, 1, srvPtr);
+
+                mDeviceContext->IASetVertexBuffers(0, 0, nullptr, nullptr, nullptr);
+                mDeviceContext->IASetIndexBuffer(nullptr, scast<DXGI_FORMAT>(0), 0);
+
+                mDeviceContext->Draw(3, 0);
             }
 
             mSwapChain->Present(0, 0);
@@ -555,6 +656,8 @@ namespace MetroEX {
             } else if (mViewingParams->rotation.y > 360.0f) {
                 mViewingParams->rotation.y -= 360.0f;
             }
+
+            mCamera->Rotate(delta.x * 0.1f, delta.y * 0.1f);
 
             this->UpdateModelMatrix();
             this->Render();

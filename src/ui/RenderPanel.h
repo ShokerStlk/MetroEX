@@ -4,9 +4,10 @@
 #include <d3d11.h>
 
 #include "mymath.h"
+#include "camera.h"
 
 class MetroModel;
-class MetroLevel;
+class MetroTexture;
 class VFXReader;
 class MetroTexturesDatabase;
 
@@ -47,6 +48,7 @@ namespace MetroEX {
         mat4 matView;
         mat4 matProjection;
         mat4 matModelViewProj;
+        vec4 camParams;
     };
 
     public ref class RenderPanel : public System::Windows::Forms::Panel {
@@ -55,6 +57,7 @@ namespace MetroEX {
 
         bool    InitGraphics();
         void    SetModel(MetroModel* model, VFXReader* vfxReader, MetroTexturesDatabase* database);
+        void    SetCubemap(MetroTexture* cubemap);
 
     private:
         bool    CreateRenderTargets();
@@ -62,7 +65,8 @@ namespace MetroEX {
         void    UpdateViewMatrix();
         void    UpdateProjectionAndReset();
         void    CreateModelGeometries();
-        void    CreateModelTextures();
+        void    CreateTextures();
+        void    CreateRenderTexture(const MetroTexture* srcTexture, RenderTexture* rt);
         void    Render();
 
     protected:
@@ -93,9 +97,15 @@ namespace MetroEX {
 
         // model viewer stuff
         MetroModel*                 mModel;
-        MetroLevel*                 mLevel;
         VFXReader*                  mVFXReader;
         MetroTexturesDatabase*      mDatabase;
+
+        // cubemap viewer stuff
+        Camera*                     mCamera;
+        MetroTexture*               mCubemap;
+        RenderTexture*              mCubemapTexture;
+        ID3D11VertexShader*         mCubemapViewerVS;
+        ID3D11PixelShader*          mCubemapViewerPS;
 
         ViewingParams*              mViewingParams;
         ConstantBufferData*         mConstantBufferData;

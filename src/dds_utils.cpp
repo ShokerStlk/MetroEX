@@ -216,7 +216,7 @@ size_t DDS_GetCompressedSizeBC7(const size_t width, const size_t height, const s
 }
 
 
-void DDS_MakeDX10Headers(DDSURFACEDESC2& desc, DDS_HEADER_DXT10& dx10hdr, const size_t w, const size_t h, const size_t numMips) {
+void DDS_MakeDX10Headers(DDSURFACEDESC2& desc, DDS_HEADER_DXT10& dx10hdr, const size_t w, const size_t h, const size_t numMips, const bool isCube) {
     memset(&desc, 0, sizeof(desc));
     memset(&dx10hdr, 0, sizeof(dx10hdr));
 
@@ -235,10 +235,21 @@ void DDS_MakeDX10Headers(DDSURFACEDESC2& desc, DDS_HEADER_DXT10& dx10hdr, const 
         desc.dwMipMapCount = scast<uint32_t>(numMips);
     }
 
-    dx10hdr.dxgiFormat = DXGI_FORMAT_BC7_UNORM;
+    if (isCube) {
+        desc.ddsCaps.dwCaps2 = DDSCAPS2_CUBEMAP |
+                               DDSCAPS2_CUBEMAP_POSITIVEX |
+                               DDSCAPS2_CUBEMAP_NEGATIVEX |
+                               DDSCAPS2_CUBEMAP_POSITIVEY |
+                               DDSCAPS2_CUBEMAP_NEGATIVEY |
+                               DDSCAPS2_CUBEMAP_POSITIVEZ |
+                               DDSCAPS2_CUBEMAP_NEGATIVEZ;
+    }
+
+    dx10hdr.dxgiFormat = isCube ? DXGI_FORMAT_BC6H_UF16 : DXGI_FORMAT_BC7_UNORM;
     dx10hdr.resourceDimension = D3D10_RESOURCE_DIMENSION_TEXTURE2D;
+    dx10hdr.miscFlag = isCube ? 4 : 0;
     dx10hdr.arraySize = 1;
-    dx10hdr.miscFlags2 = 1;
+    dx10hdr.miscFlags2 = 0;
 }
 
 void DDS_MakeDX9Header(DDSURFACEDESC2& desc, const size_t w, const size_t h, const size_t numMips) {

@@ -3,3 +3,12 @@ struct VSOutput {
     float3 normal   : TEXCOORD0;
     float2 uv       : TEXCOORD1;
 };
+
+cbuffer ConstantBuffer0 : register(b0) {
+    float4  BSphere;
+    matrix  MatModel;
+    matrix  MatView;
+    matrix  MatProjection;
+    matrix  MatModelViewProj;
+    float4  CamParams;          // x - FOV, y - aspect, zw - vacant
+};

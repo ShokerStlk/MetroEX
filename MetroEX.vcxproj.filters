@@ -67,6 +67,9 @@
     <ClCompile Include="src\ui\SoundPanel.cpp">
       <Filter>src\ui</Filter>
     </ClCompile>
+    <ClCompile Include="src\camera.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ui\RenderPanel.h">
@@ -141,6 +144,9 @@
     <ClInclude Include="src\ui\SoundPanel.h">
       <Filter>src\ui</Filter>
     </ClInclude>
+    <ClInclude Include="src\camera.h">
+      <Filter>src</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="src\ui\ImagePanel.resx" />
@@ -186,6 +192,12 @@
       <Filter>src\shaders</Filter>
     </FxCompile>
     <FxCompile Include="src\shaders\ModelViewerPS.hlsl">
+      <Filter>src\shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="src\shaders\CubemapViewerPS.hlsl">
+      <Filter>src\shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="src\shaders\CubemapViewerVS.hlsl">
       <Filter>src\shaders</Filter>
     </FxCompile>
   </ItemGroup>

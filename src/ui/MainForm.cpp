@@ -26,6 +26,14 @@ static const size_t kFolderSortedFlag   = size_t(1) << ((sizeof(size_t) * 8) - 1
 
 
 namespace MetroEX {
+    String^ PathToString(const fs::path& p) {
+        return marshal_as<String^>(p.wstring());
+    }
+
+    fs::path StringToPath(String^ s) {
+        return marshal_as<std::wstring>(s);
+    }
+
     ref class NodeSorter : public System::Collections::IComparer {
     public:
         virtual int Compare(Object^ x, Object^ y) {
@@ -120,7 +128,7 @@ namespace MetroEX {
             System::Windows::Forms::Cursor::Current = System::Windows::Forms::Cursors::WaitCursor;
 
             mVFXReader = new VFXReader();
-            if (mVFXReader->LoadFromFile(marshal_as<CharString>(ofd.FileName))) {
+            if (mVFXReader->LoadFromFile(StringToPath(ofd.FileName))) {
                 this->UpdateFilesList();
 
                 size_t fileIdx = mVFXReader->FindFile("content\\textures_handles_storage.bin");
@@ -355,7 +363,7 @@ namespace MetroEX {
             }
 
             mExtractionThread = gcnew System::Threading::Thread(gcnew System::Threading::ParameterizedThreadStart(this, &MainForm::ExtractionProcessFunc));
-            mExtractionThread->Start(marshal_as<String^>(folderPath.u8string()));
+            mExtractionThread->Start(PathToString(folderPath));
         }
     }
 
@@ -397,7 +405,7 @@ namespace MetroEX {
                 }
 
                 mExtractionThread = gcnew System::Threading::Thread(gcnew System::Threading::ParameterizedThreadStart(this, &MainForm::ExtractionProcessFunc));
-                mExtractionThread->Start(marshal_as<String^>(folderPath.u8string()));
+                mExtractionThread->Start(PathToString(folderPath));
             }
         }
     }
@@ -492,9 +500,7 @@ namespace MetroEX {
     }
 
     void MainForm::ShowTexture(const size_t fileIdx) {
-        mRenderPanel->Hide();
         mSoundPanel->Hide();
-        mImagePanel->Show();
 
         const MetroFile& mf = mVFXReader->GetFile(fileIdx);
 
@@ -502,7 +508,17 @@ namespace MetroEX {
         if (mVFXReader->ExtractFile(fileIdx, content)) {
             MetroTexture texture;
             if (texture.LoadFromData(content.data(), content.size(), mf.name)) {
-                mImagePanel->SetTexture(&texture);
+                if (texture.IsCubemap()) {
+                    mImagePanel->Hide();
+                    mRenderPanel->Show();
+
+                    mRenderPanel->SetCubemap(&texture);
+                } else {
+                    mRenderPanel->Hide();
+                    mImagePanel->Show();
+
+                    mImagePanel->SetTexture(&texture);
+                }
             }
         }
     }
@@ -630,7 +646,7 @@ namespace MetroEX {
             sfd.OverwritePrompt = true;
 
             if (sfd.ShowDialog(this) == System::Windows::Forms::DialogResult::OK) {
-                resultPath = marshal_as<CharString>(sfd.FileName);
+                resultPath = StringToPath(sfd.FileName);
             } else {
                 return true;
             }
@@ -682,7 +698,7 @@ namespace MetroEX {
             sfd.OverwritePrompt = true;
 
             if (sfd.ShowDialog(this) == System::Windows::Forms::DialogResult::OK) {
-                resultPath = marshal_as<CharString>(sfd.FileName);
+                resultPath = StringToPath(sfd.FileName);
             } else {
                 return true;
             }
@@ -738,7 +754,7 @@ namespace MetroEX {
             sfd.OverwritePrompt = true;
 
             if (sfd.ShowDialog(this) == System::Windows::Forms::DialogResult::OK) {
-                resultPath = marshal_as<CharString>(sfd.FileName);
+                resultPath = StringToPath(sfd.FileName);
             } else {
                 return true;
             }
@@ -808,7 +824,7 @@ namespace MetroEX {
             sfd.OverwritePrompt = true;
 
             if (sfd.ShowDialog(this) == System::Windows::Forms::DialogResult::OK) {
-                resultPath = marshal_as<CharString>(sfd.FileName);
+                resultPath = StringToPath(sfd.FileName);
             } else {
                 return true;
             }
@@ -887,7 +903,7 @@ namespace MetroEX {
     }
 
     void MainForm::ExtractionProcessFunc(Object^ folderPath) {
-        this->ExtractFolderComplete(*mExtractionCtx, marshal_as<CharString>(folderPath->ToString()));
+        this->ExtractFolderComplete(*mExtractionCtx, StringToPath(folderPath->ToString()));
 
         if (mExtractionProgressDlg) {
             mExtractionProgressDlg->StopProgressDialog();

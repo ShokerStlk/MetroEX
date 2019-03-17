@@ -1,13 +1,5 @@
 #include "common.hlsli"
 
-cbuffer ConstantBuffer0 : register(b0) {
-    float4  BSphere;
-    matrix  MatModel;
-    matrix  MatView;
-    matrix  MatProjection;
-    matrix  MatModelViewProj;
-};
-
 struct VSInput {
     float3  pos     : POSITION;
     float3  normal  : NORMAL;

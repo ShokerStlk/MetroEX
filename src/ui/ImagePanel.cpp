@@ -64,7 +64,10 @@ namespace MetroEX {
 
         // background
         if (mImage != nullptr && mTransparencyEnabled) {
-            e->Graphics->FillRectangle(mBackgroundBrush, this->ClientRectangle);
+            const int width = std::min(mImage->Width, this->ClientRectangle.Width);
+            const int height = std::min(mImage->Height, this->ClientRectangle.Height);
+
+            e->Graphics->FillRectangle(mBackgroundBrush, left, top, width, height);
         } else {
             e->Graphics->FillRectangle(Brushes::White, this->ClientRectangle);
         }

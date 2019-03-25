@@ -5,20 +5,13 @@
 struct MetroFile {
     static const size_t InvalidFileIdx = ~0;
 
-    enum FileType {
-        FT_File     = 0,
-        FT_Dir      = 8,
-        FT_Dir2     = 12,
-        FT_File2    = 16
-    };
-
     bool IsFile() const {
-        return this->type == FT_File || this->type == FT_File2;
+        return 0 == (this->flags & 8);
     }
 
     // common fields
     size_t      idx;
-    FileType    type;
+    size_t      flags;
     CharString  name;
 
     // file fields

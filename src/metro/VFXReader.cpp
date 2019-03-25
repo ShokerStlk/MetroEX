@@ -1,6 +1,8 @@
 #include "VFXReader.h"
 #include <fstream>
 
+#include "lz4.h"
+
 
 VFXReader::VFXReader() {
 
@@ -45,56 +47,45 @@ bool VFXReader::LoadFromFile(const fs::path& filePath) {
 
 
         const uint32_t version = stream.ReadTyped<uint32_t>();
-        if (version == 3) { // Metro: Exodus
-            const uint32_t num1 = stream.ReadTyped<uint32_t>();
-            CharString someString = stream.ReadStringZ();
+        const uint32_t compressionType = stream.ReadTyped<uint32_t>();
+        if (version == 3 && compressionType == 1) { // Metro Exodus and LZ4
+            CharString version = stream.ReadStringZ();
             stream.SkipBytes(16); // ???
             const uint32_t numVFS = stream.ReadTyped<uint32_t>();
             const uint32_t numFiles = stream.ReadTyped<uint32_t>();
-            const uint32_t numPatches = stream.ReadTyped<uint32_t>();
+            const uint32_t unknown_0 = stream.ReadTyped<uint32_t>();
 
             mPaks.resize(numVFS);
             for (Pak& pak : mPaks) {
                 pak.name = stream.ReadStringZ();
 
-                const uint32_t numMappings = stream.ReadTyped<uint32_t>();
-                pak.mappings.resize(numMappings);
-                for (auto& m : pak.mappings) {
-                    m = stream.ReadStringZ();
+                const uint32_t numStrings = stream.ReadTyped<uint32_t>();
+                pak.someStrings.resize(numStrings);
+                for (auto& s : pak.someStrings) {
+                    s = stream.ReadStringZ();
                 }
 
-                pak.idx = stream.ReadTyped<uint32_t>();
+                pak.chunk = stream.ReadTyped<uint32_t>();
             }
 
             mFiles.resize(numFiles);
             size_t fileIdx = 0;
             for (MetroFile& mf : mFiles) {
-                const uint16_t entryType = stream.ReadTyped<uint16_t>();
-
                 mf.idx = fileIdx;
-                mf.type = scast<MetroFile::FileType>(entryType);
-                switch (mf.type) {
-                    case MetroFile::FT_File:
-                    case MetroFile::FT_File2: {
-                        mf.pakIdx = stream.ReadTyped<uint16_t>();
-                        mf.offset = stream.ReadTyped<uint32_t>();
-                        mf.sizeUncompressed = stream.ReadTyped<uint32_t>();
-                        mf.sizeCompressed = stream.ReadTyped<uint32_t>();
-                        mf.name = readCharStringXored();
-                    } break;
+                mf.flags = stream.ReadTyped<uint16_t>();
 
-                    case MetroFile::FT_Dir:
-                    case MetroFile::FT_Dir2: {
-                        mf.numFiles = stream.ReadTyped<uint16_t>();
-                        mf.firstFile = stream.ReadTyped<uint32_t>();
-                        mf.name = readCharStringXored();
+                if (mf.IsFile()) {
+                    mf.pakIdx = stream.ReadTyped<uint16_t>();
+                    mf.offset = stream.ReadTyped<uint32_t>();
+                    mf.sizeUncompressed = stream.ReadTyped<uint32_t>();
+                    mf.sizeCompressed = stream.ReadTyped<uint32_t>();
+                    mf.name = readCharStringXored();
+                } else {
+                    mf.numFiles = stream.ReadTyped<uint16_t>();
+                    mf.firstFile = stream.ReadTyped<uint32_t>();
+                    mf.name = readCharStringXored();
 
-                        mFolders.push_back(fileIdx);
-                    } break;
-
-                    default:
-                        assert(false);
-                        break;
+                    mFolders.push_back(fileIdx);
                 }
 
                 ++fileIdx;
@@ -226,100 +217,32 @@ size_t VFXReader::CountFilesInFolder(const size_t idx) const {
 
 
 
-static const int32_t kDecCounts[8] = { 0, 3, 2, 3, 0, 0, 0, 0 };
-static const int32_t kDecOffsets[8] = { 0, 0, 0, -1, 0, 1, 2, 3 };
-
 size_t VFXReader::Decompress(const BytesArray& compressedData, BytesArray& uncompressedData) {
     size_t result = 0;
 
     MemStream stream(compressedData.data(), compressedData.size());
-    uint8_t* dst = uncompressedData.data();
+    char* dst = rcast<char*>(uncompressedData.data());
 
-    uint32_t num1 = 0;
-    uint32_t num2 = 0;
-    uint32_t destinationIdx = 0;
-
+    size_t outCursor = 0;
     while (!stream.Ended()) {
-        const uint32_t num3 = stream.ReadTyped<uint32_t>();
-        const uint32_t num4 = stream.ReadTyped<uint32_t>();
+        const size_t blockSize = stream.ReadTyped<uint32_t>();
+        const size_t blockUncompressedSize = stream.ReadTyped<uint32_t>();
 
-        num1 += num3;
-        num2 += num4;
+        const char* src = rcast<const char*>(stream.GetDataAtCursor());
 
-        uint32_t num5 = destinationIdx + num4;
-
-        for (;;) {
-            uint32_t num6 = stream.ReadTyped<uint8_t>();
-            uint32_t num7 = num6 >> 4;
-            if (num7 == 0xF) {
-                uint8_t num8 = 0;
-                do {
-                    num8 = stream.ReadTyped<uint8_t>();
-                    num7 += num8;
-                } while (num8 == 0xFF);
-            }
-
-            stream.ReadToBuffer(dst + destinationIdx, num7);
-
-            destinationIdx += num7;
-
-            if (destinationIdx < num5) {
-                const uint32_t index1 = stream.ReadTyped<uint16_t>();
-
-                uint32_t num8 = num6 & 0xF;
-                if (num8 == 0xF) {
-                    uint8_t num9 = 0;
-                    do {
-                        num9 = stream.ReadTyped<uint8_t>();
-                        num8 += num9;
-                    } while (num9 == 0xFF);
-                }
-
-                uint32_t sourceIndex1 = destinationIdx - index1;
-                uint32_t destinationIndex2 = destinationIdx;
-                uint32_t sourceIndex2 = 0;
-                uint32_t destinationIndex3 = 0;
-                if (index1 >= 8) {
-                    std::memmove(dst + destinationIndex2, dst + sourceIndex1, 8);
-                    sourceIndex2 = sourceIndex1 + 8;
-                    destinationIndex3 = destinationIndex2 + 8;
-                } else {
-                    dst[destinationIndex2 + 0] = dst[sourceIndex1 + 0];
-                    dst[destinationIndex2 + 1] = dst[sourceIndex1 + 1];
-                    dst[destinationIndex2 + 2] = dst[sourceIndex1 + 2];
-                    dst[destinationIndex2 + 3] = dst[sourceIndex1 + 3];
-
-                    int num9 = sourceIndex1 + 4;
-                    int destinationIndex4 = destinationIndex2 + 4;
-                    int index2 = destinationIndex4 - num9;
-                    int sourceIndex3 = num9 - kDecCounts[index2];
-
-                    std::memmove(dst + destinationIndex4, dst + sourceIndex3, 4);
-
-                    sourceIndex2 = sourceIndex3 - kDecOffsets[index1];
-                    destinationIndex3 = destinationIndex4 + 4;
-                }
-
-                int num10 = destinationIndex3 - 4 + num8;
-                if (num10 < num5 - 8) {
-                    for (; destinationIndex3 < num10; destinationIndex3 += 8) {
-                        std::memmove(dst + destinationIndex3, dst + sourceIndex2, 8);
-                        sourceIndex2 += 8;
-                    }
-                } else {
-                    for (; destinationIndex3 < num10; ++destinationIndex3) {
-                        dst[destinationIndex3] = dst[sourceIndex2];
-                        ++sourceIndex2;
-                    }
-                }
-                destinationIdx = num10;
-            } else {
-                break;
-            }
+        const int nbRead = LZ4_decompress_fast_withPrefix64k(src, dst + outCursor, scast<int>(blockUncompressedSize));
+        const int nbCompressed = scast<int>(blockSize - 8);
+        if (nbRead < scast<int>(nbCompressed)) {
+            // ooops, error :(
+            return 0;
         }
+
+        outCursor += blockUncompressedSize;
+
+        stream.SkipBytes(nbCompressed);
     }
 
-    result = destinationIdx;
+    result = outCursor;
 
     return result;
 }

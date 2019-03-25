@@ -3,9 +3,9 @@
 
 struct Pak {
     CharString      name;
-    StringArray     mappings;
-    size_t          idx;
-    MyArray<size_t>   files;
+    StringArray     someStrings;
+    size_t          chunk;
+    MyArray<size_t> files;
 };
 
 class VFXReader {

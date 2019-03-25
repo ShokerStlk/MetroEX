@@ -1,4 +1,5 @@
 #include "ui/MainForm.h"
+#include <VersionHelpers.h>
 
 //#NOTE_SK: CLR issues - have to undef this bullshit so I can use the proper static function of Icon
 //Thanks Microsoft !!!
@@ -9,6 +10,25 @@
 using namespace System;
 using namespace System::Drawing;
 using namespace System::Windows::Forms;
+
+ref class WheelFilter : public System::Windows::Forms::IMessageFilter
+{
+public:
+    // Inherited via IMessageFilter
+    virtual bool PreFilterMessage(System::Windows::Forms::Message % m)
+    {
+        if (m.Msg == WM_MOUSEWHEEL) {
+            // WM_MOUSEWHEEL, find the control at screen position m.LParam
+            POINT pos { m.LParam.ToInt32() & 0xffff, m.LParam.ToInt32() >> 16 };
+            HWND hWnd = WindowFromPoint(pos);
+            if (hWnd && hWnd != m.HWnd.ToPointer()) {
+                SendMessage(hWnd, m.Msg, (WPARAM)m.WParam.ToPointer(), (LPARAM)m.LParam.ToPointer());
+                return true;
+            }
+        }
+        return false;
+    }
+};
 
 [STAThreadAttribute]
 void Main(array<String^>^ args) {
@@ -21,6 +41,10 @@ void Main(array<String^>^ args) {
 
     MetroEX::MainForm form;
     form.Icon = appIcon;
+
+    if (IsWindows7OrGreater() && !IsWindows8OrGreater()) {
+        Application::AddMessageFilter(gcnew WheelFilter());
+    }
 
     Application::Run(%form);
 }

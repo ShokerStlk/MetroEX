@@ -111,6 +111,7 @@
     <ClCompile Include="src\metro\MetroConfigDatabase.cpp" />
     <ClCompile Include="src\metro\MetroLevel.cpp" />
     <ClCompile Include="src\metro\MetroModel.cpp" />
+    <ClCompile Include="src\metro\MetroMotion.cpp" />
     <ClCompile Include="src\metro\MetroReflection.cpp" />
     <ClCompile Include="src\metro\MetroSkeleton.cpp" />
     <ClCompile Include="src\metro\MetroSound.cpp" />
@@ -135,6 +136,7 @@
     <ClInclude Include="src\metro\MetroConfigDatabase.h" />
     <ClInclude Include="src\metro\MetroLevel.h" />
     <ClInclude Include="src\metro\MetroModel.h" />
+    <ClInclude Include="src\metro\MetroMotion.h" />
     <ClInclude Include="src\metro\MetroReflection.h" />
     <ClInclude Include="src\metro\MetroSkeleton.h" />
     <ClInclude Include="src\metro\MetroSound.h" />

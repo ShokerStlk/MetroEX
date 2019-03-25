@@ -1,8 +1,12 @@
 #include "VFXReader.h"
 #include <fstream>
 
+#define LZ4_DISABLE_DEPRECATE_WARNINGS
 #include "lz4.h"
 
+
+static const size_t kVFXVersionExodus   = 3;
+static const size_t kVFXCompressionLZ4  = 1;
 
 VFXReader::VFXReader() {
 
@@ -46,14 +50,14 @@ bool VFXReader::LoadFromFile(const fs::path& filePath) {
         };
 
 
-        const uint32_t version = stream.ReadTyped<uint32_t>();
-        const uint32_t compressionType = stream.ReadTyped<uint32_t>();
-        if (version == 3 && compressionType == 1) { // Metro Exodus and LZ4
-            CharString version = stream.ReadStringZ();
-            stream.SkipBytes(16); // ???
-            const uint32_t numVFS = stream.ReadTyped<uint32_t>();
-            const uint32_t numFiles = stream.ReadTyped<uint32_t>();
-            const uint32_t unknown_0 = stream.ReadTyped<uint32_t>();
+        const size_t version = stream.ReadTyped<uint32_t>();
+        const size_t compressionType = stream.ReadTyped<uint32_t>();
+        if (version == kVFXVersionExodus && compressionType == kVFXCompressionLZ4) { // Metro Exodus and LZ4
+            mContentVersion = stream.ReadStringZ();
+            stream.SkipBytes(16); // guid, seems to be static across the game
+            const size_t numVFS = stream.ReadTyped<uint32_t>();
+            const size_t numFiles = stream.ReadTyped<uint32_t>();
+            const size_t unknown_0 = stream.ReadTyped<uint32_t>();
 
             mPaks.resize(numVFS);
             for (Pak& pak : mPaks) {

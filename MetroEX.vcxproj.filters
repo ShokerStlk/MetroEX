@@ -70,6 +70,9 @@
     <ClCompile Include="src\camera.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="src\metro\MetroMotion.cpp">
+      <Filter>src\metro</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ui\RenderPanel.h">
@@ -146,6 +149,9 @@
     </ClInclude>
     <ClInclude Include="src\camera.h">
       <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\metro\MetroMotion.h">
+      <Filter>src\metro</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

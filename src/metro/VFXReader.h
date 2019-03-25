@@ -27,9 +27,10 @@ public:
 private:
     size_t              Decompress(const BytesArray& compressedData, BytesArray& uncompressedData);
 
+    CharString          mContentVersion;
     CharString          mFileName;
     fs::path            mBasePath;
-    MyArray<Pak>          mPaks;
-    MyArray<MetroFile>    mFiles;
-    MyArray<size_t>       mFolders;
+    MyArray<Pak>        mPaks;
+    MyArray<MetroFile>  mFiles;
+    MyArray<size_t>     mFolders;
 };

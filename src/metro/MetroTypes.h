@@ -53,15 +53,15 @@ struct MetroVertex {
 } PACKED_STRUCT_END;
 
 struct MetroMesh {
-    bool                skinned;
-    vec3                scales;
-    AABBox              bbox;
-    size_t              type;
-    size_t              idx;
-    StringArray         materials;
-    MyArray<MetroFace>    faces;
-    MyArray<MetroVertex>  vertices;
-    BytesArray          bonesRemap;
+    bool                 skinned;
+    vec3                 scales;
+    AABBox               bbox;
+    size_t               type;
+    size_t               idx;
+    StringArray          materials;
+    MyArray<MetroFace>   faces;
+    MyArray<MetroVertex> vertices;
+    BytesArray           bonesRemap;
 };
 
 

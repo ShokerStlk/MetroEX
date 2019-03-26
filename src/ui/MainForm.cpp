@@ -413,11 +413,64 @@ namespace MetroEX {
         }
     }
 
-
     void MainForm::ShowErrorMessage(String^ message) {
         System::Windows::Forms::MessageBoxButtons buttons = System::Windows::Forms::MessageBoxButtons::OK;
         System::Windows::Forms::MessageBoxIcon mbicon = System::Windows::Forms::MessageBoxIcon::Error;
         System::Windows::Forms::MessageBox::Show(message, this->Text, buttons, mbicon);
+    }
+
+    void MainForm::txtTreeSearch_TextChanged(System::Object^ sender, System::EventArgs^ e) {
+        if (mOriginalRootNode != nullptr) {
+            this->filterTimer->Stop();
+            this->filterTimer->Start();
+        }
+    }
+
+    void MainForm::filterTimer_Tick(System::Object^ sender, System::EventArgs^ e) {
+        this->filterTimer->Stop();
+
+        System::Windows::Forms::Cursor::Current = System::Windows::Forms::Cursors::WaitCursor;
+
+        this->treeView1->BeginUpdate();
+        this->treeView1->Nodes->Clear();
+
+        if (String::IsNullOrWhiteSpace(this->txtTreeSearch->Text)) {
+            this->treeView1->Nodes->Add(mOriginalRootNode);
+        } else {
+            TreeNode^ root = dynamic_cast<TreeNode^>(mOriginalRootNode->Clone());
+            this->FilterTreeView(root, this->txtTreeSearch->Text);
+            this->treeView1->Nodes->Add(root);
+
+            if (this->txtTreeSearch->Text->Length > 2) {
+                root->ExpandAll();
+            }
+        }
+
+        this->treeView1->EndUpdate();
+
+        System::Windows::Forms::Cursor::Current = System::Windows::Forms::Cursors::Arrow;
+    }
+
+    bool MainForm::FilterTreeView(TreeNode^ node, String^ text) {
+        System::Collections::Generic::List<TreeNode^>^ nodesToRemove = gcnew System::Collections::Generic::List<TreeNode^>();
+
+        for (int i = 0; i < node->Nodes->Count; i++) {
+            if (node->Nodes[i]->Nodes->Count > 0) {
+                if (!this->FilterTreeView(node->Nodes[i], this->txtTreeSearch->Text)) {
+                    nodesToRemove->Add(node->Nodes[i]);
+                }
+            } else if(!node->Nodes[i]->Text->Contains(this->txtTreeSearch->Text)) {
+                nodesToRemove->Add(node->Nodes[i]);
+            }
+        }
+
+        for (int i = 0; i < nodesToRemove->Count; i++) {
+            node->Nodes->Remove(nodesToRemove[i]);
+        }
+
+        delete nodesToRemove;
+
+        return node->Nodes->Count != 0;
     }
 
     void MainForm::UpdateFilesList() {
@@ -425,9 +478,13 @@ namespace MetroEX {
         this->treeView1->Nodes->Clear();
 
         if (mVFXReader) {
+            this->txtTreeSearch->Text = String::Empty;
+
             String^ rootName = marshal_as<String^>(mVFXReader->GetSelfName());
             TreeNode^ rootNode = this->treeView1->Nodes->Add(rootName);
             size_t rootIdx = 0;
+
+            mOriginalRootNode = rootNode;
 
             rootNode->ImageIndex = kImageIdxFoldeClosed;
             rootNode->SelectedImageIndex = kImageIdxFoldeClosed;

@@ -65,6 +65,8 @@ namespace MetroEX {
             mExtractionCtx = new FileExtractionCtx;
             mExtractionProgressDlg = nullptr;
 
+            mOriginalRootNode = nullptr;
+
             InitializeComponent();
         }
 
@@ -88,13 +90,13 @@ namespace MetroEX {
         System::Threading::Thread^  mExtractionThread;
         IProgressDialog*            mExtractionProgressDlg;
 
-
+        TreeNode^                   mOriginalRootNode;
 
     protected:
 
     private: System::Windows::Forms::StatusStrip^  statusStrip1;
     private: System::Windows::Forms::SplitContainer^  splitContainer1;
-    private: System::Windows::Forms::TreeView^  treeView1;
+
 
 
 
@@ -128,6 +130,12 @@ namespace MetroEX {
     private: System::Windows::Forms::ToolStripButton^  toolBtnImgEnableAlpha;
     private: System::Windows::Forms::ToolStripSeparator^  toolStripSeparator1;
 
+    private: System::Windows::Forms::Timer^  filterTimer;
+    private: System::Windows::Forms::TableLayoutPanel^  tableLayoutPanel1;
+    private: System::Windows::Forms::TreeView^  treeView1;
+    private: System::Windows::Forms::TextBox^  txtTreeSearch;
+
+
 
     private: System::ComponentModel::IContainer^  components;
 
@@ -152,8 +160,10 @@ namespace MetroEX {
             this->statusLabel3 = (gcnew System::Windows::Forms::ToolStripStatusLabel());
             this->statusLabel4 = (gcnew System::Windows::Forms::ToolStripStatusLabel());
             this->splitContainer1 = (gcnew System::Windows::Forms::SplitContainer());
+            this->tableLayoutPanel1 = (gcnew System::Windows::Forms::TableLayoutPanel());
             this->treeView1 = (gcnew System::Windows::Forms::TreeView());
             this->imageListMain = (gcnew System::Windows::Forms::ImageList(this->components));
+            this->txtTreeSearch = (gcnew System::Windows::Forms::TextBox());
             this->ctxMenuExportTexture = (gcnew System::Windows::Forms::ContextMenuStrip(this->components));
             this->saveAsDDSToolStripMenuItem = (gcnew System::Windows::Forms::ToolStripMenuItem());
             this->saveAsLegacyDDSToolStripMenuItem = (gcnew System::Windows::Forms::ToolStripMenuItem());
@@ -172,14 +182,16 @@ namespace MetroEX {
             this->extractFolderWithConversionToolStripMenuItem = (gcnew System::Windows::Forms::ToolStripMenuItem());
             this->toolStrip1 = (gcnew System::Windows::Forms::ToolStrip());
             this->toolBtnFileOpen = (gcnew System::Windows::Forms::ToolStripButton());
+            this->toolStripSeparator1 = (gcnew System::Windows::Forms::ToolStripSeparator());
             this->toolBtnAbout = (gcnew System::Windows::Forms::ToolStripButton());
             this->toolStripSeparator2 = (gcnew System::Windows::Forms::ToolStripSeparator());
             this->toolBtnImgEnableAlpha = (gcnew System::Windows::Forms::ToolStripButton());
-            this->toolStripSeparator1 = (gcnew System::Windows::Forms::ToolStripSeparator());
+            this->filterTimer = (gcnew System::Windows::Forms::Timer(this->components));
             this->statusStrip1->SuspendLayout();
             (cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->splitContainer1))->BeginInit();
             this->splitContainer1->Panel1->SuspendLayout();
             this->splitContainer1->SuspendLayout();
+            this->tableLayoutPanel1->SuspendLayout();
             this->ctxMenuExportTexture->SuspendLayout();
             this->ctxMenuExportModel->SuspendLayout();
             this->ctxMenuExportSound->SuspendLayout();
@@ -238,20 +250,38 @@ namespace MetroEX {
             // 
             // splitContainer1.Panel1
             // 
-            this->splitContainer1->Panel1->Controls->Add(this->treeView1);
+            this->splitContainer1->Panel1->Controls->Add(this->tableLayoutPanel1);
             this->splitContainer1->Size = System::Drawing::Size(1159, 672);
             this->splitContainer1->SplitterDistance = 301;
             this->splitContainer1->TabIndex = 2;
+            // 
+            // tableLayoutPanel1
+            // 
+            this->tableLayoutPanel1->ColumnCount = 1;
+            this->tableLayoutPanel1->ColumnStyles->Add((gcnew System::Windows::Forms::ColumnStyle(System::Windows::Forms::SizeType::Percent,
+                100)));
+            this->tableLayoutPanel1->Controls->Add(this->treeView1, 0, 1);
+            this->tableLayoutPanel1->Controls->Add(this->txtTreeSearch, 0, 0);
+            this->tableLayoutPanel1->Dock = System::Windows::Forms::DockStyle::Fill;
+            this->tableLayoutPanel1->Location = System::Drawing::Point(0, 0);
+            this->tableLayoutPanel1->Margin = System::Windows::Forms::Padding(0);
+            this->tableLayoutPanel1->Name = L"tableLayoutPanel1";
+            this->tableLayoutPanel1->RowCount = 2;
+            this->tableLayoutPanel1->RowStyles->Add((gcnew System::Windows::Forms::RowStyle(System::Windows::Forms::SizeType::Absolute, 22)));
+            this->tableLayoutPanel1->RowStyles->Add((gcnew System::Windows::Forms::RowStyle()));
+            this->tableLayoutPanel1->Size = System::Drawing::Size(301, 672);
+            this->tableLayoutPanel1->TabIndex = 2;
             // 
             // treeView1
             // 
             this->treeView1->Dock = System::Windows::Forms::DockStyle::Fill;
             this->treeView1->ImageIndex = 0;
             this->treeView1->ImageList = this->imageListMain;
-            this->treeView1->Location = System::Drawing::Point(0, 0);
+            this->treeView1->Location = System::Drawing::Point(0, 22);
+            this->treeView1->Margin = System::Windows::Forms::Padding(0);
             this->treeView1->Name = L"treeView1";
             this->treeView1->SelectedImageIndex = 0;
-            this->treeView1->Size = System::Drawing::Size(301, 672);
+            this->treeView1->Size = System::Drawing::Size(301, 650);
             this->treeView1->TabIndex = 0;
             this->treeView1->AfterCollapse += gcnew System::Windows::Forms::TreeViewEventHandler(this, &MainForm::treeView1_AfterCollapse);
             this->treeView1->AfterExpand += gcnew System::Windows::Forms::TreeViewEventHandler(this, &MainForm::treeView1_AfterExpand);
@@ -265,6 +295,16 @@ namespace MetroEX {
             this->imageListMain->Images->SetKeyName(0, L"document.png");
             this->imageListMain->Images->SetKeyName(1, L"folder_closed.png");
             this->imageListMain->Images->SetKeyName(2, L"folder_opened.png");
+            // 
+            // txtTreeSearch
+            // 
+            this->txtTreeSearch->Dock = System::Windows::Forms::DockStyle::Top;
+            this->txtTreeSearch->Location = System::Drawing::Point(0, 0);
+            this->txtTreeSearch->Margin = System::Windows::Forms::Padding(0);
+            this->txtTreeSearch->Name = L"txtTreeSearch";
+            this->txtTreeSearch->Size = System::Drawing::Size(301, 20);
+            this->txtTreeSearch->TabIndex = 1;
+            this->txtTreeSearch->TextChanged += gcnew System::EventHandler(this, &MainForm::txtTreeSearch_TextChanged);
             // 
             // ctxMenuExportTexture
             // 
@@ -408,6 +448,11 @@ namespace MetroEX {
             this->toolBtnFileOpen->ToolTipText = L"Open Metro Exodus archive...";
             this->toolBtnFileOpen->Click += gcnew System::EventHandler(this, &MainForm::toolBtnFileOpen_Click);
             // 
+            // toolStripSeparator1
+            // 
+            this->toolStripSeparator1->Name = L"toolStripSeparator1";
+            this->toolStripSeparator1->Size = System::Drawing::Size(6, 25);
+            // 
             // toolBtnAbout
             // 
             this->toolBtnAbout->DisplayStyle = System::Windows::Forms::ToolStripItemDisplayStyle::Image;
@@ -437,10 +482,10 @@ namespace MetroEX {
             this->toolBtnImgEnableAlpha->ToolTipText = L"Enable alpha";
             this->toolBtnImgEnableAlpha->Click += gcnew System::EventHandler(this, &MainForm::toolBtnImgEnableAlpha_Click);
             // 
-            // toolStripSeparator1
+            // filterTimer
             // 
-            this->toolStripSeparator1->Name = L"toolStripSeparator1";
-            this->toolStripSeparator1->Size = System::Drawing::Size(6, 25);
+            this->filterTimer->Interval = 1000;
+            this->filterTimer->Tick += gcnew System::EventHandler(this, &MainForm::filterTimer_Tick);
             // 
             // MainForm
             // 
@@ -459,6 +504,8 @@ namespace MetroEX {
             this->splitContainer1->Panel1->ResumeLayout(false);
             (cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->splitContainer1))->EndInit();
             this->splitContainer1->ResumeLayout(false);
+            this->tableLayoutPanel1->ResumeLayout(false);
+            this->tableLayoutPanel1->PerformLayout();
             this->ctxMenuExportTexture->ResumeLayout(false);
             this->ctxMenuExportModel->ResumeLayout(false);
             this->ctxMenuExportSound->ResumeLayout(false);
@@ -515,5 +562,10 @@ namespace MetroEX {
         bool ExtractSound(const FileExtractionCtx& ctx, const fs::path& outPath);
         bool ExtractFolderComplete(const FileExtractionCtx& ctx, const fs::path& outPath);
         void ExtractionProcessFunc(Object^ folderPath);
-    };
+
+        // filter
+        void txtTreeSearch_TextChanged(System::Object^ sender, System::EventArgs^ e);
+        bool FilterTreeView(TreeNode^ node, String^ text);
+        void filterTimer_Tick(System::Object^ sender, System::EventArgs^ e);
+};
 }

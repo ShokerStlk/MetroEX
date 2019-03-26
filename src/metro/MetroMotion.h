@@ -5,6 +5,13 @@
 PACKED_STRUCT_BEGIN
 struct BonesBitset {
     uint32_t    dwords[8];
+
+    inline bool IsPresent(const size_t idx) const {
+        const size_t i = idx >> 5;
+        assert(i <= 7);
+        const uint32_t mask = 1 << (idx & 0x1F);
+        return (dwords[i] & mask) == mask;
+    }
 } PACKED_STRUCT_END;
 
 class MetroMotion {

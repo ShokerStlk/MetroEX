@@ -18,6 +18,7 @@ namespace MetroEX {
         Unknown,
         Texture,
         Model,
+        Motion,
         Level,
         Sound
     };

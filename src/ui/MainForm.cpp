@@ -4,6 +4,7 @@
 #include "metro/MetroTexture.h"
 #include "metro/MetroModel.h"
 #include "metro/MetroSound.h"
+#include "metro/MetroMotion.h"
 
 #include <fstream>
 
@@ -60,6 +61,8 @@ namespace MetroEX {
             result = FileType::Texture;
         } else if (name->EndsWith(L".model")) {
             result = FileType::Model;
+        } else if (name->EndsWith(L".m2")) {
+            result = FileType::Motion;
         } else if (name->EndsWith(L".vba")) {
             result = FileType::Sound;
         } else if (name->EndsWith(L"lightmaps")) {
@@ -417,9 +420,6 @@ namespace MetroEX {
         System::Windows::Forms::MessageBox::Show(message, this->Text, buttons, mbicon);
     }
 
-    static volatile bool    sStopThreads = false;
-    static volatile size_t  sFinishedThreads = 0;
-
     void MainForm::UpdateFilesList() {
         this->treeView1->BeginUpdate();
         this->treeView1->Nodes->Clear();
@@ -487,6 +487,15 @@ namespace MetroEX {
 
             case FileType::Model: {
                 this->ShowModel(fileIdx);
+            } break;
+
+            case FileType::Motion: {
+                BytesArray content;
+                if (mVFXReader->ExtractFile(fileIdx, content)) {
+                    MetroMotion motion;
+                    if (motion.LoadFromData(content.data(), content.size())) {
+                    }
+                }
             } break;
 
             case FileType::Sound: {

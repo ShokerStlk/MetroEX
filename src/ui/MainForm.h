@@ -95,7 +95,7 @@ namespace MetroEX {
 
     private: System::Windows::Forms::StatusStrip^  statusStrip1;
     private: System::Windows::Forms::SplitContainer^  splitContainer1;
-    private: System::Windows::Forms::TreeView^  treeView1;
+
 
 
 
@@ -128,8 +128,11 @@ namespace MetroEX {
     private: System::Windows::Forms::ToolStripSeparator^  toolStripSeparator2;
     private: System::Windows::Forms::ToolStripButton^  toolBtnImgEnableAlpha;
     private: System::Windows::Forms::ToolStripSeparator^  toolStripSeparator1;
-    private: System::Windows::Forms::TextBox^  textBox1;
+
     private: System::Windows::Forms::Timer^  filterTimer;
+    private: System::Windows::Forms::TableLayoutPanel^  tableLayoutPanel1;
+    private: System::Windows::Forms::TreeView^  treeView1;
+    private: System::Windows::Forms::TextBox^  txtTreeSearch;
 
 
 
@@ -156,9 +159,10 @@ namespace MetroEX {
             this->statusLabel3 = (gcnew System::Windows::Forms::ToolStripStatusLabel());
             this->statusLabel4 = (gcnew System::Windows::Forms::ToolStripStatusLabel());
             this->splitContainer1 = (gcnew System::Windows::Forms::SplitContainer());
-            this->textBox1 = (gcnew System::Windows::Forms::TextBox());
+            this->tableLayoutPanel1 = (gcnew System::Windows::Forms::TableLayoutPanel());
             this->treeView1 = (gcnew System::Windows::Forms::TreeView());
             this->imageListMain = (gcnew System::Windows::Forms::ImageList(this->components));
+            this->txtTreeSearch = (gcnew System::Windows::Forms::TextBox());
             this->ctxMenuExportTexture = (gcnew System::Windows::Forms::ContextMenuStrip(this->components));
             this->saveAsDDSToolStripMenuItem = (gcnew System::Windows::Forms::ToolStripMenuItem());
             this->saveAsLegacyDDSToolStripMenuItem = (gcnew System::Windows::Forms::ToolStripMenuItem());
@@ -186,6 +190,7 @@ namespace MetroEX {
             (cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->splitContainer1))->BeginInit();
             this->splitContainer1->Panel1->SuspendLayout();
             this->splitContainer1->SuspendLayout();
+            this->tableLayoutPanel1->SuspendLayout();
             this->ctxMenuExportTexture->SuspendLayout();
             this->ctxMenuExportModel->SuspendLayout();
             this->ctxMenuExportSound->SuspendLayout();
@@ -244,27 +249,35 @@ namespace MetroEX {
             // 
             // splitContainer1.Panel1
             // 
-            this->splitContainer1->Panel1->Controls->Add(this->textBox1);
-            this->splitContainer1->Panel1->Controls->Add(this->treeView1);
+            this->splitContainer1->Panel1->Controls->Add(this->tableLayoutPanel1);
             this->splitContainer1->Size = System::Drawing::Size(1159, 672);
             this->splitContainer1->SplitterDistance = 301;
             this->splitContainer1->TabIndex = 2;
             // 
-            // textBox1
+            // tableLayoutPanel1
             // 
-            this->textBox1->Dock = System::Windows::Forms::DockStyle::Top;
-            this->textBox1->Location = System::Drawing::Point(0, 0);
-            this->textBox1->Name = L"textBox1";
-            this->textBox1->Size = System::Drawing::Size(301, 20);
-            this->textBox1->TabIndex = 1;
-            this->textBox1->TextChanged += gcnew System::EventHandler(this, &MainForm::textBox1_TextChanged);
+            this->tableLayoutPanel1->ColumnCount = 1;
+            this->tableLayoutPanel1->ColumnStyles->Add((gcnew System::Windows::Forms::ColumnStyle(System::Windows::Forms::SizeType::Percent,
+                100)));
+            this->tableLayoutPanel1->Controls->Add(this->treeView1, 0, 1);
+            this->tableLayoutPanel1->Controls->Add(this->txtTreeSearch, 0, 0);
+            this->tableLayoutPanel1->Dock = System::Windows::Forms::DockStyle::Fill;
+            this->tableLayoutPanel1->Location = System::Drawing::Point(0, 0);
+            this->tableLayoutPanel1->Margin = System::Windows::Forms::Padding(0);
+            this->tableLayoutPanel1->Name = L"tableLayoutPanel1";
+            this->tableLayoutPanel1->RowCount = 2;
+            this->tableLayoutPanel1->RowStyles->Add((gcnew System::Windows::Forms::RowStyle(System::Windows::Forms::SizeType::Absolute, 22)));
+            this->tableLayoutPanel1->RowStyles->Add((gcnew System::Windows::Forms::RowStyle()));
+            this->tableLayoutPanel1->Size = System::Drawing::Size(301, 672);
+            this->tableLayoutPanel1->TabIndex = 2;
             // 
             // treeView1
             // 
-            this->treeView1->Dock = System::Windows::Forms::DockStyle::Bottom;
+            this->treeView1->Dock = System::Windows::Forms::DockStyle::Fill;
             this->treeView1->ImageIndex = 0;
             this->treeView1->ImageList = this->imageListMain;
             this->treeView1->Location = System::Drawing::Point(0, 22);
+            this->treeView1->Margin = System::Windows::Forms::Padding(0);
             this->treeView1->Name = L"treeView1";
             this->treeView1->SelectedImageIndex = 0;
             this->treeView1->Size = System::Drawing::Size(301, 650);
@@ -281,6 +294,16 @@ namespace MetroEX {
             this->imageListMain->Images->SetKeyName(0, L"document.png");
             this->imageListMain->Images->SetKeyName(1, L"folder_closed.png");
             this->imageListMain->Images->SetKeyName(2, L"folder_opened.png");
+            // 
+            // txtTreeSearch
+            // 
+            this->txtTreeSearch->Dock = System::Windows::Forms::DockStyle::Top;
+            this->txtTreeSearch->Location = System::Drawing::Point(0, 0);
+            this->txtTreeSearch->Margin = System::Windows::Forms::Padding(0);
+            this->txtTreeSearch->Name = L"txtTreeSearch";
+            this->txtTreeSearch->Size = System::Drawing::Size(301, 20);
+            this->txtTreeSearch->TabIndex = 1;
+            this->txtTreeSearch->TextChanged += gcnew System::EventHandler(this, &MainForm::txtTreeSearch_TextChanged);
             // 
             // ctxMenuExportTexture
             // 
@@ -478,9 +501,10 @@ namespace MetroEX {
             this->statusStrip1->ResumeLayout(false);
             this->statusStrip1->PerformLayout();
             this->splitContainer1->Panel1->ResumeLayout(false);
-            this->splitContainer1->Panel1->PerformLayout();
             (cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->splitContainer1))->EndInit();
             this->splitContainer1->ResumeLayout(false);
+            this->tableLayoutPanel1->ResumeLayout(false);
+            this->tableLayoutPanel1->PerformLayout();
             this->ctxMenuExportTexture->ResumeLayout(false);
             this->ctxMenuExportModel->ResumeLayout(false);
             this->ctxMenuExportSound->ResumeLayout(false);
@@ -539,7 +563,7 @@ namespace MetroEX {
         void ExtractionProcessFunc(Object^ folderPath);
 
         // filter
-        void textBox1_TextChanged(System::Object^ sender, System::EventArgs^ e);
+        void txtTreeSearch_TextChanged(System::Object^ sender, System::EventArgs^ e);
         bool FilterTreeView(TreeNode^ node, String^ text);
         void filterTimer_Tick(System::Object^ sender, System::EventArgs^ e);
 };

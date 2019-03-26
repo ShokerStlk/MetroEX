@@ -416,11 +416,11 @@ namespace MetroEX {
         System::Windows::Forms::MessageBox::Show(message, this->Text, buttons, mbicon);
     }
 
-    void MainForm::textBox1_TextChanged(System::Object^ sender, System::EventArgs^ e) {
-        if (!mOriginalRootNode) return;
-
-        this->filterTimer->Stop();
-        this->filterTimer->Start();
+    void MainForm::txtTreeSearch_TextChanged(System::Object^ sender, System::EventArgs^ e) {
+        if (mOriginalRootNode != nullptr) {
+            this->filterTimer->Stop();
+            this->filterTimer->Start();
+        }
     }
 
     void MainForm::filterTimer_Tick(System::Object^ sender, System::EventArgs^ e) {
@@ -431,14 +431,14 @@ namespace MetroEX {
         this->treeView1->BeginUpdate();
         this->treeView1->Nodes->Clear();
 
-        if (String::IsNullOrWhiteSpace(this->textBox1->Text)) {
+        if (String::IsNullOrWhiteSpace(this->txtTreeSearch->Text)) {
             this->treeView1->Nodes->Add(mOriginalRootNode);
         } else {
             TreeNode^ root = dynamic_cast<TreeNode^>(mOriginalRootNode->Clone());
-            this->FilterTreeView(root, this->textBox1->Text);
+            this->FilterTreeView(root, this->txtTreeSearch->Text);
             this->treeView1->Nodes->Add(root);
 
-            if (this->textBox1->Text->Length > 2) {
+            if (this->txtTreeSearch->Text->Length > 2) {
                 root->ExpandAll();
             }
         }
@@ -453,10 +453,10 @@ namespace MetroEX {
 
         for (int i = 0; i < node->Nodes->Count; i++) {
             if (node->Nodes[i]->Nodes->Count > 0) {
-                if (!this->FilterTreeView(node->Nodes[i], this->textBox1->Text)) {
+                if (!this->FilterTreeView(node->Nodes[i], this->txtTreeSearch->Text)) {
                     nodesToRemove->Add(node->Nodes[i]);
                 }
-            } else if(!node->Nodes[i]->Text->Contains(this->textBox1->Text)) {
+            } else if(!node->Nodes[i]->Text->Contains(this->txtTreeSearch->Text)) {
                 nodesToRemove->Add(node->Nodes[i]);
             }
         }
@@ -478,6 +478,8 @@ namespace MetroEX {
         this->treeView1->Nodes->Clear();
 
         if (mVFXReader) {
+            this->txtTreeSearch->Text = String::Empty;
+
             String^ rootName = marshal_as<String^>(mVFXReader->GetSelfName());
             TreeNode^ rootNode = this->treeView1->Nodes->Add(rootName);
             size_t rootIdx = 0;

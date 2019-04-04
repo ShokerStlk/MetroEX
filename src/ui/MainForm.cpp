@@ -434,7 +434,7 @@ namespace MetroEX {
         if (String::IsNullOrWhiteSpace(this->txtTreeSearch->Text)) {
             this->treeView1->Nodes->Add(mOriginalRootNode);
         } else {
-            TreeNode^ root = dynamic_cast<TreeNode^>(mOriginalRootNode->Clone());
+            TreeNode^ root = safe_cast<TreeNode^>(mOriginalRootNode->Clone());
             this->FilterTreeView(root, this->txtTreeSearch->Text);
             this->treeView1->Nodes->Add(root);
 

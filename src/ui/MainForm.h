@@ -300,9 +300,16 @@ namespace MetroEX {
             // 
             this->imageListMain->ImageStream = (cli::safe_cast<System::Windows::Forms::ImageListStreamer^>(resources->GetObject(L"imageListMain.ImageStream")));
             this->imageListMain->TransparentColor = System::Drawing::Color::Transparent;
-            this->imageListMain->Images->SetKeyName(0, L"document.png");
-            this->imageListMain->Images->SetKeyName(1, L"folder_closed.png");
-            this->imageListMain->Images->SetKeyName(2, L"folder_opened.png");
+            this->imageListMain->Images->SetKeyName(0, L"folder_closed.png");
+            this->imageListMain->Images->SetKeyName(1, L"folder_opened.png");
+            this->imageListMain->Images->SetKeyName(2, L"file_any.png");
+            this->imageListMain->Images->SetKeyName(3, L"bin_unkn.ico");
+            this->imageListMain->Images->SetKeyName(4, L"bin_archive.ico");
+            this->imageListMain->Images->SetKeyName(5, L"bin_editable.ico");
+            this->imageListMain->Images->SetKeyName(6, L"dds.ico");
+            this->imageListMain->Images->SetKeyName(7, L"anim.ico");
+            this->imageListMain->Images->SetKeyName(8, L"vba.ico");
+            this->imageListMain->Images->SetKeyName(9, L"model.png");
             // 
             // txtTreeSearch
             // 

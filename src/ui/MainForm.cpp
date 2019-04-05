@@ -110,6 +110,7 @@ namespace MetroEX {
             } break;
 
             case FileType::Folder:
+            case FileType::FolderBin: {
                 if (eventType == eNodeEventType::Open) {
                     Node->ImageIndex = kImageIdxFolderOpen;
                     Node->SelectedImageIndex = kImageIdxFolderOpen;
@@ -122,6 +123,11 @@ namespace MetroEX {
             case FileType::Bin: {
                 Node->ImageIndex = kImageIdxBinUnkn;
                 Node->SelectedImageIndex = kImageIdxBinUnkn;
+            } break;
+
+            case FileType::BinArchive: {
+                Node->ImageIndex = kImageIdxBinArchive;
+                Node->SelectedImageIndex = kImageIdxBinArchive;
             } break;
 
             case FileType::BinEditable: {
@@ -288,10 +294,14 @@ namespace MetroEX {
     void MainForm::treeView1_NodeMouseClick(System::Object^, System::Windows::Forms::TreeNodeMouseClickEventArgs^ e) {
         if (e->Button == System::Windows::Forms::MouseButtons::Right) {
             FileTagData^ fileData = safe_cast<FileTagData^>(e->Node->Tag);
+            bool isSubFile = fileData->subFileIdx != kEmptyIdx;
 
             const size_t fileIdx = fileData->fileIdx & kFileIdxMask;
             const MetroFile& mf = mVFXReader->GetFile(fileIdx);
-            const FileType fileType = DetectFileType(mf);
+
+            const FileType fileType = isSubFile ?
+                fileData->fileType :
+                DetectFileType(mf);
 
             memset(mExtractionCtx, 0, sizeof(FileExtractionCtx));
             mExtractionCtx->fileIdx = fileIdx;
@@ -312,6 +322,23 @@ namespace MetroEX {
 
                     case FileType::Sound: {
                         this->ctxMenuExportSound->Show(this->treeView1, e->X, e->Y);
+                    } break;
+
+                    case FileType::Bin: {
+                        if (isSubFile) {
+                            size_t chunkIdx = fileData->subFileIdx;
+                            MetroConfigsDatabase::ConfigInfo* ci = mConfigsDatabase->GetFileByIdx(chunkIdx);
+
+                            mExtractionCtx->customOffset = ci->offset;
+                            mExtractionCtx->customLength = ci->length;
+                            mExtractionCtx->customFileName = marshal_as<CharString>(e->Node->Text);
+                            this->ctxMenuExportBin->Show(this->treeView1, e->X, e->Y);
+                        } else {
+                            this->ctxMenuExportRaw->Show(this->treeView1, e->X, e->Y);
+                        }
+                    } break;
+
+                    case FileType::FolderBin: {
                     } break;
 
                     default: {
@@ -394,6 +421,20 @@ namespace MetroEX {
 
         if (!this->ExtractSound(*mExtractionCtx, fs::path())) {
             this->ShowErrorMessage("Failed to extract sound!");
+        }
+    }
+
+    void MainForm::extractBinRootToolStripMenuItem_Click(System::Object^ sender, System::EventArgs^ e) {
+        mExtractionCtx->customOffset = kEmptyCustomValue;
+        mExtractionCtx->customLength = kEmptyCustomValue;
+        mExtractionCtx->customFileName = "";
+
+        this->extractFileToolStripMenuItem_Click(sender, e);
+    }
+
+    void MainForm::extractBinChunkToolStripMenuItem_Click(System::Object^  sender, System::EventArgs^  e) {
+        if (!this->ExtractFile(*mExtractionCtx, fs::path())) {
+            this->ShowErrorMessage("Failed to extract bin file chunk!");
         }
     }
 
@@ -561,22 +602,84 @@ namespace MetroEX {
     }
 
     void MainForm::AddFoldersRecursive(const MetroFile& dir, const size_t folderIdx, TreeNode^ rootItem) {
+        // Get idx of config.bin
+        size_t configBinIdx = mVFXReader->FindFile("content\\config.bin");
+
+        // Add root folder
         TreeNode^ dirLeafNode = rootItem->Nodes->Add(marshal_as<String^>(dir.name));
 
         dirLeafNode->Tag = gcnew FileTagData(FileType::Folder, folderIdx, kEmptyIdx);
         UpdateNodeIcon(dirLeafNode);
 
+        // Add files and folders inside
         for (size_t idx = dir.firstFile; idx < dir.firstFile + dir.numFiles; ++idx) {
             const MetroFile& mf = mVFXReader->GetFile(idx);
 
             if (mf.IsFile()) {
-                TreeNode^ fileNode = dirLeafNode->Nodes->Add(marshal_as<String^>(mf.name));
-                fileNode->Tag = idx;
-                fileNode->ImageIndex = kImageIdxFile;
-                fileNode->SelectedImageIndex = kImageIdxFile;
+                //==> Add file to list
+                if (idx == configBinIdx) {
+                    //====> config.bin
+                    this->AddBinaryArchive(mf, idx, dirLeafNode);
+                } else {
+                    //====> any other file
+                    const FileType fileType = DetectFileType(mf);
+                    TreeNode^ fileNode = dirLeafNode->Nodes->Add(marshal_as<String^>(mf.name));
+                    fileNode->Tag = gcnew FileTagData(fileType, idx, kEmptyIdx);
+                    UpdateNodeIcon(fileNode);
+                }
             } else {
+                //==> Add folder to list
                 this->AddFoldersRecursive(mf, idx, dirLeafNode);
             }
+        }
+    }
+
+    void MainForm::AddBinaryArchive(const MetroFile& mf, const size_t fileIdx, TreeNode^ rootItem) {
+        TreeNode^ fileNode = rootItem->Nodes->Add(marshal_as<String^>(mf.name));
+        fileNode->Tag = gcnew FileTagData(FileType::BinArchive, fileIdx, kEmptyIdx);
+        UpdateNodeIcon(fileNode);
+
+        for (int chunkIdx = 0; chunkIdx < mConfigsDatabase->mConfigsChunks.size(); ++chunkIdx) {
+            const MetroConfigsDatabase::ConfigInfo& ci = mConfigsDatabase->mConfigsChunks.at(chunkIdx);
+
+            bool isNameDecrypted = ci.name_decrypted != "";
+
+            String^ fileName = (isNameDecrypted ?
+                marshal_as<String^>(ci.name_decrypted) :
+                String::Format("unknCRC32_0x{0:X}.bin", ci.name_crc)
+            );
+
+            TreeNode^ lastNode = fileNode; // folder to add file
+            if (isNameDecrypted) {
+                array<String^>^ pathArray = fileName->Split('\\');
+                fileName = pathArray[pathArray->Length - 1];
+
+                // Add all sub-folders
+                String^ curPath = pathArray[0];
+                for (int i = 0; i < (pathArray->Length - 1); i++) {
+                    array<TreeNode^>^ folderNodes = lastNode->Nodes->Find(curPath, false);
+                    if (folderNodes->Length == 0) {
+                        // Create new folder node
+                        String^ folderName = pathArray[i];
+
+                        lastNode = lastNode->Nodes->Add(folderName);
+                        lastNode->Tag = gcnew FileTagData(FileType::FolderBin, fileIdx, 0);
+                        lastNode->Name = curPath; // for Find()
+                        UpdateNodeIcon(lastNode);
+                    }
+                    else {
+                        // Use existing node folder
+                        lastNode = folderNodes[0];
+                    }
+
+                    curPath += "\\" + pathArray[i + 1];
+                }
+            }
+
+            // Add binary file
+            TreeNode^ chunkNode = lastNode->Nodes->Add(fileName);
+            chunkNode->Tag = gcnew FileTagData(FileType::Bin, fileIdx, chunkIdx);
+            UpdateNodeIcon(chunkNode);
         }
     }
 

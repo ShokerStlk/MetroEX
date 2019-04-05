@@ -25,3 +25,7 @@
 # folders
 .vs
 x64
+src/shaders/ModelViewerVS.hlsl.h
+src/shaders/ModelViewerPS.hlsl.h
+src/shaders/CubemapViewerVS.hlsl.h
+src/shaders/CubemapViewerPS.hlsl.h

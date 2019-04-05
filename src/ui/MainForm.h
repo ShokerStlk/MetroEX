@@ -31,6 +31,11 @@ namespace MetroEX {
     struct FileExtractionCtx {
         size_t      fileIdx;
         FileType    type;
+
+        size_t      customOffset;
+        size_t      customLength;
+        CharString  customFileName;
+
         // models
         bool        mdlSaveAsObj;
         bool        mdlSaveAsFbx;

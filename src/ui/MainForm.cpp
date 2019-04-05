@@ -23,6 +23,7 @@ enum class eNodeEventType : size_t {
 };
 
 static const int    kEmptyIdx = -1;
+static const size_t kEmptyCustomValue = -1;
 
 static const int kImageIdxFolderClosed  = 0;
 static const int kImageIdxFolderOpen    = 1;
@@ -295,6 +296,9 @@ namespace MetroEX {
             memset(mExtractionCtx, 0, sizeof(FileExtractionCtx));
             mExtractionCtx->fileIdx = fileIdx;
             mExtractionCtx->type = fileType;
+            mExtractionCtx->customOffset = kEmptyCustomValue;
+            mExtractionCtx->customLength = kEmptyCustomValue;
+            mExtractionCtx->customFileName = "";
 
             if (mf.IsFile()) {
                 switch (fileType) {
@@ -738,7 +742,9 @@ namespace MetroEX {
         bool result = false;
 
         const MetroFile& mf = mVFXReader->GetFile(ctx.fileIdx);
-        String^ name = marshal_as<String^>(mf.name);
+        String^ name = ctx.customFileName.empty() ?
+            marshal_as<String^>(mf.name) :
+            marshal_as<String^>(ctx.customFileName);
 
         fs::path resultPath = outPath;
         if (resultPath.empty()) {
@@ -761,7 +767,27 @@ namespace MetroEX {
             if (mVFXReader->ExtractFile(ctx.fileIdx, content)) {
                 std::ofstream file(resultPath, std::ofstream::binary);
                 if (file.good()) {
-                    file.write(rcast<const char*>(content.data()), content.size());
+                    const void* data = content.data();
+                    size_t dataSize = content.size();
+
+                    bool hasCustomLength = ctx.customLength != kEmptyCustomValue;
+                    bool hasCustomOffset = ctx.customOffset != kEmptyCustomValue;
+
+                    size_t lengthToWrite = hasCustomLength ?
+                        ctx.customLength :
+                        dataSize;
+
+                    if (hasCustomOffset) {
+                        MemStream stream(data, dataSize);
+                        stream.SetCursor(ctx.customOffset);
+                        data = stream.GetDataAtCursor();
+
+                        if (hasCustomLength == false) {
+                            lengthToWrite = dataSize - ctx.customOffset;
+                        }
+                    }
+
+                    file.write(rcast<const char*>(data), lengthToWrite);
                     file.flush();
 
                     result = true;

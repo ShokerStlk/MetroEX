@@ -111,6 +111,7 @@
     <ClCompile Include="src\log.cpp" />
     <ClCompile Include="src\metro\MetroConfigDatabase.cpp" />
     <ClCompile Include="src\metro\MetroLevel.cpp" />
+    <ClCompile Include="src\metro\MetroDatabases.h" />
     <ClCompile Include="src\metro\MetroModel.cpp" />
     <ClCompile Include="src\metro\MetroMotion.cpp" />
     <ClCompile Include="src\metro\MetroReflection.cpp" />

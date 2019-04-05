@@ -1,6 +1,5 @@
 #include "metro/VFXReader.h"
-#include "metro/MetroTexturesDatabase.h"
-#include "metro/MetroConfigDatabase.h"
+#include "metro/MetroDatabases.h"
 #include "metro/MetroTexture.h"
 #include "metro/MetroModel.h"
 #include "metro/MetroSound.h"
@@ -129,34 +128,8 @@ namespace MetroEX {
 
             mVFXReader = new VFXReader();
             if (mVFXReader->LoadFromFile(StringToPath(ofd.FileName))) {
+                LoadDatabasesFromFile(mVFXReader, this);
                 this->UpdateFilesList();
-
-                size_t fileIdx = mVFXReader->FindFile("content\\textures_handles_storage.bin");
-                if (MetroFile::InvalidFileIdx != fileIdx) {
-                    BytesArray content;
-                    if (mVFXReader->ExtractFile(fileIdx, content)) {
-                        mTexturesDatabase = new MetroTexturesDatabase();
-                        mTexturesDatabase->LoadFromData(content.data(), content.size());
-
-                        fileIdx = mVFXReader->FindFile("content\\scripts\\texture_aliases.bin");
-                        if (MetroFile::InvalidFileIdx != fileIdx) {
-                            if (mVFXReader->ExtractFile(fileIdx, content)) {
-                                mTexturesDatabase->LoadAliasesFromData(content.data(), content.size());
-                            }
-                        }
-                    }
-                }
-
-#if 0
-                fileIdx = mVFXReader->FindFile("content\\config.bin");
-                if (MetroFile::InvalidFileIdx != fileIdx) {
-                    BytesArray content;
-                    if (mVFXReader->ExtractFile(fileIdx, content)) {
-                        MetroConfigDatabase configs;
-                        configs.LoadFromData(content.data(), content.size());
-                    }
-                }
-#endif
             }
 
             System::Windows::Forms::Cursor::Current = System::Windows::Forms::Cursors::Arrow;

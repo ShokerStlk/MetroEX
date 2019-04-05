@@ -11,6 +11,7 @@
 
 class VFXReader;
 class MetroTexturesDatabase;
+class MetroConfigsDatabase;
 
 namespace MetroEX {
 
@@ -83,13 +84,16 @@ namespace MetroEX {
 
         //
         VFXReader*                  mVFXReader;
-        MetroTexturesDatabase*      mTexturesDatabase;
 
         FileExtractionCtx*          mExtractionCtx;
         System::Threading::Thread^  mExtractionThread;
         IProgressDialog*            mExtractionProgressDlg;
 
         TreeNode^                   mOriginalRootNode;
+
+    public:
+        MetroTexturesDatabase*      mTexturesDatabase;
+        MetroConfigsDatabase*       mConfigsDatabase;
 
     protected:
 

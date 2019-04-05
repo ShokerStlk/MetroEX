@@ -133,6 +133,7 @@
     <ClInclude Include="libs\lz4\lz4.h" />
     <ClInclude Include="libs\xxhash\xxhash.h" />
     <ClInclude Include="src\log.h" />
+    <ClInclude Include="src\metro\MetroConfigNames.h" />
     <ClInclude Include="src\camera.h" />
     <ClInclude Include="src\dds_utils.h" />
     <ClInclude Include="src\hashing.h" />

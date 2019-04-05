@@ -1,19 +1,28 @@
 #pragma once
 #include "mycommon.h"
 
-class MetroConfigDatabase {
+class MetroConfigsDatabase {
 public:
-    MetroConfigDatabase();
-    ~MetroConfigDatabase();
-
-    bool    LoadFromData(const void* data, const size_t length);
-
-private:
     struct ConfigInfo {
-        size_t  offset;
-        size_t  length;
+        uint32_t    name_crc;
+        CharString  name_decrypted;
+        size_t      offset;
+        size_t      length;
     };
 
-    MyArray<uint8_t>              mData;
-    MyDict<uint32_t, ConfigInfo>  mConfigs;
+    MetroConfigsDatabase();
+    ~MetroConfigsDatabase();
+
+    bool        LoadFromData(const void* data, const size_t length);
+    
+    ConfigInfo* FindFile(uint32_t nameCRC32);
+    ConfigInfo* FindFile(CharString name);
+
+    ConfigInfo* GetFileByIdx(size_t chunkIdx);
+
+    MyArray<uint8_t>    mData;
+    MyArray<ConfigInfo> mConfigsChunks;
+
+    uint32_t mStatsTotalDecryptedNames;
+    uint32_t mStatsTotalEncryptedNames;
 };

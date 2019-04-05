@@ -17,6 +17,11 @@ namespace MetroEX {
 
     enum class FileType : size_t {
         Unknown,
+        Folder,
+        FolderBin,
+        Bin,
+        BinArchive,
+        BinEditable,
         Texture,
         Model,
         Level,

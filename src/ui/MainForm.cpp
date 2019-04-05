@@ -69,6 +69,8 @@ namespace MetroEX {
             name->EndsWith(L".1024") ||
             name->EndsWith(L".2048")) {
             result = FileType::Texture;
+        } else if (name->EndsWith(L".bin")) {
+            result = FileType::Bin;
         } else if (name->EndsWith(L".model")) {
             result = FileType::Model;
         } else if (name->EndsWith(L".vba")) {

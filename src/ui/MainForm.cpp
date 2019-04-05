@@ -19,12 +19,24 @@ using namespace msclr::interop;
 static const int kImageIdxFile          = 0;
 static const int kImageIdxFoldeClosed   = 1;
 static const int kImageIdxFoldeOpen     = 2;
+static const int    kEmptyIdx = -1;
 
 static const size_t kFileIdxMask        = size_t(~0) >> 1;
 static const size_t kFolderSortedFlag   = size_t(1) << ((sizeof(size_t) * 8) - 1);
 
-
 namespace MetroEX {
+    ref struct FileTagData {
+        FileType fileType; // type of file
+        size_t fileIdx; // index inside .vfx
+        size_t subFileIdx; // index inside .bin database
+
+        FileTagData(FileType _fileType, size_t _fileIdx, size_t _subFileIdx) {
+            fileType = _fileType;
+            fileIdx = _fileIdx;
+            subFileIdx = _subFileIdx;
+        }
+    };
+
     String^ PathToString(const fs::path& p) {
         return marshal_as<String^>(p.wstring());
     }
@@ -152,7 +164,8 @@ namespace MetroEX {
 
     // treeview
     void MainForm::treeView1_AfterSelect(System::Object^, System::Windows::Forms::TreeViewEventArgs^ e) {
-        const size_t fileIdx = safe_cast<size_t>(e->Node->Tag) & kFileIdxMask;
+        FileTagData^ fileData = safe_cast<FileTagData^>(e->Node->Tag);
+        const size_t fileIdx = fileData->fileIdx & kFileIdxMask;
 
         if (mVFXReader) {
             const MetroFile& mf = mVFXReader->GetFile(fileIdx);
@@ -181,9 +194,9 @@ namespace MetroEX {
         e->Node->ImageIndex = kImageIdxFoldeOpen;
         e->Node->SelectedImageIndex = kImageIdxFoldeOpen;
 
-        const size_t tag = safe_cast<size_t>(e->Node->Tag);
-        if (0 == (tag & kFolderSortedFlag)) {
-            const size_t fileIdx = tag & kFileIdxMask;
+        FileTagData^ fileData = safe_cast<FileTagData^>(e->Node->Tag);
+        if (0 == (fileData->fileIdx & kFolderSortedFlag)) {
+            const size_t fileIdx = fileData->fileIdx & kFileIdxMask;
 
             if (e->Node->Nodes->Count > 1) {
                 System::Windows::Forms::Cursor::Current = System::Windows::Forms::Cursors::WaitCursor;
@@ -205,14 +218,15 @@ namespace MetroEX {
                 System::Windows::Forms::Cursor::Current = System::Windows::Forms::Cursors::Arrow;
             }
 
-            e->Node->Tag = kFolderSortedFlag | fileIdx;
+            fileData->fileIdx = kFolderSortedFlag | fileIdx;
         }
     }
 
     void MainForm::treeView1_NodeMouseClick(System::Object^, System::Windows::Forms::TreeNodeMouseClickEventArgs^ e) {
         if (e->Button == System::Windows::Forms::MouseButtons::Right) {
-            const size_t fileIdx = safe_cast<size_t>(e->Node->Tag) & kFileIdxMask;
+            FileTagData^ fileData = safe_cast<FileTagData^>(e->Node->Tag);
 
+            const size_t fileIdx = fileData->fileIdx & kFileIdxMask;
             const MetroFile& mf = mVFXReader->GetFile(fileIdx);
             const FileType fileType = DetectFileType(mf);
 
@@ -461,17 +475,18 @@ namespace MetroEX {
 
             rootNode->ImageIndex = kImageIdxFoldeClosed;
             rootNode->SelectedImageIndex = kImageIdxFoldeClosed;
-            rootNode->Tag = rootIdx;
+            rootNode->Tag = gcnew FileTagData(FileType::Folder, rootIdx, kEmptyIdx);
 
             const MetroFile& rootDir = mVFXReader->GetRootFolder();
             for (size_t idx = rootDir.firstFile; idx < rootDir.firstFile + rootDir.numFiles; ++idx) {
                 const MetroFile& mf = mVFXReader->GetFile(idx);
 
                 if (mf.IsFile()) {
+                    const FileType fileType = DetectFileType(mf);
                     TreeNode^ fileNode = rootNode->Nodes->Add(marshal_as<String^>(mf.name));
-                    fileNode->Tag = idx;
                     fileNode->ImageIndex = kImageIdxFile;
                     fileNode->SelectedImageIndex = kImageIdxFile;
+                    fileNode->Tag = gcnew FileTagData(fileType, idx, kEmptyIdx);
                 } else {
                     this->AddFoldersRecursive(mf, idx, rootNode);
                 }
@@ -486,7 +501,7 @@ namespace MetroEX {
 
         dirLeafNode->ImageIndex = kImageIdxFoldeClosed;
         dirLeafNode->SelectedImageIndex = kImageIdxFoldeClosed;
-        dirLeafNode->Tag = folderIdx;
+        dirLeafNode->Tag = gcnew FileTagData(FileType::Folder, folderIdx, kEmptyIdx);
 
         for (size_t idx = dir.firstFile; idx < dir.firstFile + dir.numFiles; ++idx) {
             const MetroFile& mf = mVFXReader->GetFile(idx);

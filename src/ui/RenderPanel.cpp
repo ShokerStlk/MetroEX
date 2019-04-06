@@ -1,6 +1,8 @@
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "d3d11.lib")
 
+#include <chrono>
+
 #include "metro/MetroModel.h"
 #include "metro/MetroSkeleton.h"
 #include "metro/MetroMotion.h"
@@ -816,8 +818,20 @@ namespace MetroEX {
     }
 
     void RenderPanel::AnimationTimer_Tick(System::Object^, System::EventArgs^) {
-        const float kTickTimSec = 0.016f;
+        static double sLastTimeMS = -1.0;
 
-        this->UpdateAnimation(kTickTimSec);
+        std::chrono::system_clock::time_point tp = std::chrono::system_clock::now();
+        std::chrono::system_clock::time_point::duration epoch = tp.time_since_epoch();
+
+        const double currentTimeMS = scast<double>(std::chrono::duration_cast<std::chrono::milliseconds>(epoch).count());
+
+        if (sLastTimeMS < 0.0) {
+            sLastTimeMS = currentTimeMS;
+        }
+
+        const double dtSeconds = (currentTimeMS - sLastTimeMS) * 0.001;
+        sLastTimeMS = currentTimeMS;
+
+        this->UpdateAnimation(scast<float>(dtSeconds));
     }
 }

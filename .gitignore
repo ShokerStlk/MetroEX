@@ -13,6 +13,7 @@
 # Precompiled Headers
 *.gch
 *.pch
+src/shaders/*.h
 
 # Executables
 *.exe
@@ -25,3 +26,4 @@
 # folders
 .vs
 x64
+_build

@@ -58,18 +58,18 @@ namespace MetroEX {
             this->button1 = (gcnew System::Windows::Forms::Button());
             (cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->pictureBox1))->BeginInit();
             this->SuspendLayout();
-            // 
+            //
             // pictureBox1
-            // 
+            //
             this->pictureBox1->Image = (cli::safe_cast<System::Drawing::Image^>(resources->GetObject(L"pictureBox1.Image")));
             this->pictureBox1->Location = System::Drawing::Point(13, 13);
             this->pictureBox1->Name = L"pictureBox1";
             this->pictureBox1->Size = System::Drawing::Size(128, 128);
             this->pictureBox1->TabIndex = 0;
             this->pictureBox1->TabStop = false;
-            // 
+            //
             // richTextBox1
-            // 
+            //
             this->richTextBox1->BorderStyle = System::Windows::Forms::BorderStyle::None;
             this->richTextBox1->Location = System::Drawing::Point(148, 13);
             this->richTextBox1->Name = L"richTextBox1";
@@ -77,9 +77,9 @@ namespace MetroEX {
             this->richTextBox1->Size = System::Drawing::Size(414, 128);
             this->richTextBox1->TabIndex = 1;
             this->richTextBox1->Text = L"";
-            // 
+            //
             // button1
-            // 
+            //
             this->button1->Location = System::Drawing::Point(486, 148);
             this->button1->Name = L"button1";
             this->button1->Size = System::Drawing::Size(75, 23);
@@ -87,9 +87,9 @@ namespace MetroEX {
             this->button1->Text = L"OK";
             this->button1->UseVisualStyleBackColor = true;
             this->button1->Click += gcnew System::EventHandler(this, &AboutDlg::button1_Click);
-            // 
+            //
             // AboutDlg
-            // 
+            //
             this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
             this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
             this->ClientSize = System::Drawing::Size(575, 182);
@@ -116,11 +116,13 @@ namespace MetroEX {
         private: System::Void AboutDlg_Load(System::Object^  sender, System::EventArgs^  e) {
             String^ rtfText = LR"({\rtf1\ansi\ansicpg1251\deff0\nouicompat\deflang1049{\fonttbl{\f0\fnil\fcharset204 Segoe UI;}{\f1\fnil\fcharset0 Segoe UI;}{\f2\fnil\fcharset0 Calibri;}}
 {\colortbl ;\red0\green77\blue187;\red243\green164\blue71;}
-{\*\generator Riched20 10.0.17763}\viewkind4\uc1 
+{\*\generator Riched20 10.0.17763}\viewkind4\uc1
 \pard\qc\cf1\b\f0\fs18 MetroEX\cf0\b0  v0.\f1\lang1033 3\f0\lang1049\par
 \par
-Created by Sergii "\cf2\b iOrange\cf0\b0 " Kudlai\f1\lang1033  in \f0\lang1049 2019\line\line\f1\lang1033 Contributors:\line\i Abramcumner\line Slik\f2\fs22\lang9\par
-} )";
+Created by Sergii "\cf2\b iOrange\cf0\b0 " Kudlai\f1\lang1033  in \f0\lang1049 2019\line\line\f1\lang1033 Contributors:\line\i Abramcumner\line Slik\par
+Shoker\f2\fs22\lang9\par
+}
+ )";
 
             array<Byte>^ byteArray = System::Text::Encoding::ASCII->GetBytes(rtfText);
             System::IO::MemoryStream stream(byteArray);

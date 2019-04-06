@@ -66,6 +66,7 @@ const vec3& MetroSkeleton::GetBonePosition(const size_t idx) const {
 mat4 MetroSkeleton::GetBoneTransform(const size_t idx) const {
     mat4 result = MatFromQuat(this->bones[idx].q);
     result[3] = vec4(this->bones[idx].t, 1.0f);
+
     return result;
 }
 
@@ -126,6 +127,12 @@ void MetroSkeleton::DeserializeSelf(MemStream& stream, const uint8_t flags) {
     METRO_READ_MEMBER(s, parent_skeleton); // if version > 13
     METRO_READ_STRUCT_ARRAY_MEMBER(s, parent_bone_maps); // if version > 13
     METRO_READ_STRUCT_ARRAY_MEMBER(s, bones);
+
+    //#NOTE_SK: fix-up bones transforms by swizzling them back
+    for (auto& b : bones) {
+        b.q = MetroSwizzle(b.q);
+        b.t = MetroSwizzle(b.t);
+    }
 
     //#TODO_SK:
     // locators

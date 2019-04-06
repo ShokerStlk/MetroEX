@@ -287,6 +287,8 @@ void MetroMotion::ReadAttributeCurve(const uint8_t* curveData, AttributeCurve& c
         auto& p = curve.points.back();
         p.time = 0.0f;
         memcpy(&p.value, curveData, attribSize * sizeof(float));
+
+        p.value = MetroSwizzle(p.value);
     } else if (ctype == AttribCurveType::Unknown_3 || ctype == AttribCurveType::Unknown_6) {
         assert(false);
     } else {
@@ -300,6 +302,8 @@ void MetroMotion::ReadAttributeCurve(const uint8_t* curveData, AttributeCurve& c
                 for (auto& p : curve.points) {
                     p.time = *timingsPtr;
                     memcpy(&p.value, valuesPtr, attribSize * sizeof(float));
+
+                    p.value = MetroSwizzle(p.value);
 
                     timingsPtr++;
                     valuesPtr += attribSize;
@@ -315,7 +319,7 @@ void MetroMotion::ReadAttributeCurve(const uint8_t* curveData, AttributeCurve& c
                 curveData += sizeof(vec3[2]);
 
                 const uint16_t* timingsPtr = rcast<const uint16_t*>(curveData);
-                const int16_t* valuesPtr = rcast<const int16_t*>(curveData + (numPoints * sizeof(uint16_t)));
+                const uint16_t* valuesPtr = rcast<const uint16_t*>(curveData + (numPoints * sizeof(uint16_t)));
 
                 for (auto& p : curve.points) {
                     p.time = scast<float>(*timingsPtr) * timingScale;
@@ -323,6 +327,8 @@ void MetroMotion::ReadAttributeCurve(const uint8_t* curveData, AttributeCurve& c
                     p.value.x = scast<float>(valuesPtr[0]) * scale.x + offset.x;
                     p.value.y = scast<float>(valuesPtr[1]) * scale.y + offset.y;
                     p.value.z = scast<float>(valuesPtr[2]) * scale.z + offset.z;
+
+                    p.value = MetroSwizzle(p.value);
 
                     timingsPtr++;
                     valuesPtr += 3;
@@ -357,6 +363,8 @@ void MetroMotion::ReadAttributeCurve(const uint8_t* curveData, AttributeCurve& c
                         case 2: p.value = vec4(qx, qy, qw, qz); break;
                         case 3: p.value = vec4(qx, qy, qz, qw); break;
                     }
+
+                    p.value = MetroSwizzle(p.value);
 
                     //*rcast<quat*>(&p.value) = Normalize(*rcast<quat*>(&p.value));
 

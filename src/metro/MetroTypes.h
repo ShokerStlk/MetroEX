@@ -108,6 +108,22 @@ static vec4 DecodeNormal(const uint32_t n) {
     return vec4(x, y, z, w);
 }
 
+inline vec3 MetroSwizzle(const vec3& v) {
+    return vec3(v.z, v.y, v.x);
+}
+
+inline vec4 MetroSwizzle(const vec4& v) {
+    return vec4(v.z, v.y, v.x, v.w);
+}
+
+inline quat MetroSwizzle(const quat& q) {
+    return quat(q.w, q.z, q.y, q.x);
+}
+
+inline void MetroSwizzle(uint8_t* a) {
+    std::swap(a[0], a[2]);
+}
+
 template <typename T>
 inline MetroVertex ConvertVertex(const T&) {
     assert(false);
@@ -117,8 +133,8 @@ template <>
 inline MetroVertex ConvertVertex<VertexStatic>(const VertexStatic& v) {
     MetroVertex result = {};
 
-    result.pos = v.pos;
-    result.normal = DecodeNormal(v.normal);
+    result.pos = MetroSwizzle(v.pos);
+    result.normal = MetroSwizzle(DecodeNormal(v.normal));
     result.uv0 = v.uv;
 
     return result;
@@ -131,15 +147,17 @@ inline MetroVertex ConvertVertex<VertexSkinned>(const VertexSkinned& v) {
 
     MetroVertex result = {};
 
-    result.pos = vec3(scast<float>(v.pos[0]) * posDequant,
-                      scast<float>(v.pos[1]) * posDequant,
-                      scast<float>(v.pos[2]) * posDequant);
+    result.pos = MetroSwizzle(vec3(scast<float>(v.pos[0]) * posDequant,
+                                   scast<float>(v.pos[1]) * posDequant,
+                                   scast<float>(v.pos[2]) * posDequant));
     result.bones[0] = v.bones[0] / 3;
     result.bones[1] = v.bones[1] / 3;
     result.bones[2] = v.bones[2] / 3;
     result.bones[3] = v.bones[3] / 3;
-    result.normal = DecodeNormal(v.normal);
+    MetroSwizzle(result.bones);
+    result.normal = MetroSwizzle(DecodeNormal(v.normal));
     *rcast<uint32_t*>(result.weights) = *rcast<const uint32_t*>(v.weights);
+    MetroSwizzle(result.weights);
     result.uv0 = vec2(scast<float>(v.uv[0]) * uvDequant,
                       scast<float>(v.uv[1]) * uvDequant);
     return result;
@@ -151,8 +169,8 @@ inline MetroVertex ConvertVertex<VertexLevel>(const VertexLevel& v) {
 
     MetroVertex result = {};
 
-    result.pos = v.pos;
-    result.normal = DecodeNormal(v.normal);
+    result.pos = MetroSwizzle(v.pos);
+    result.normal = MetroSwizzle(DecodeNormal(v.normal));
     result.uv0 = vec2(scast<float>(v.uv0[0]) * uvDequant,
                       scast<float>(v.uv0[1]) * uvDequant);
     result.uv1 = vec2(scast<float>(v.uv1[0]) * uvDequant,

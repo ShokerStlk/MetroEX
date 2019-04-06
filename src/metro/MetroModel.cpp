@@ -110,7 +110,7 @@ bool MetroModel::SaveAsOBJ(const fs::path& filePath, VFXReader* vfxReader, Metro
             const MetroMesh* mesh = mMeshes[i];
             if (!mesh->vertices.empty() && !mesh->faces.empty()) {
                 for (const MetroVertex& v : mesh->vertices) {
-                    stringBuilder << "v " << v.pos.z << ' ' << v.pos.y << ' ' << v.pos.x << std::endl;
+                    stringBuilder << "v " << v.pos.x << ' ' << v.pos.y << ' ' << v.pos.z << std::endl;
                 }
                 stringBuilder << "# " << mesh->vertices.size() << " vertices" << std::endl << std::endl;
 
@@ -120,7 +120,7 @@ bool MetroModel::SaveAsOBJ(const fs::path& filePath, VFXReader* vfxReader, Metro
                 stringBuilder << "# " << mesh->vertices.size() << " texcoords" << std::endl << std::endl;
 
                 for (const MetroVertex& v : mesh->vertices) {
-                    stringBuilder << "vn " << v.normal.z << ' ' << v.normal.y << ' ' << v.normal.x << std::endl;
+                    stringBuilder << "vn " << v.normal.x << ' ' << v.normal.y << ' ' << v.normal.z << std::endl;
                 }
                 stringBuilder << "# " << mesh->vertices.size() << " normals" << std::endl << std::endl;
 
@@ -159,7 +159,7 @@ bool MetroModel::SaveAsOBJ(const fs::path& filePath, VFXReader* vfxReader, Metro
             std::ofstream mtlFile(matPath, std::ofstream::binary);
             if (mtlFile.good()) {
                 std::ostringstream mtlBuilder;
-                mtlBuilder << "# Generated for Metro Exodus model file" << std::endl;
+                mtlBuilder << "# Generated from Metro Exodus model file" << std::endl;
                 mtlBuilder << "# using MetroEX tool made by iOrange, 2019" << std::endl << std::endl;
 
                 for (size_t i = 0; i < mMeshes.size(); ++i) {
@@ -218,13 +218,10 @@ void CollectClusters(const MetroMesh* mesh, const MetroSkeleton* skeleton, MyArr
             const MetroVertex& v = mesh->vertices[j];
 
             for (size_t k = 0; k < 4; ++k) {
-                const size_t rawIdx = v.bones[k];
-                if (rawIdx < mesh->bonesRemap.size()) {
-                    const size_t mappedBoneIdx = mesh->bonesRemap[rawIdx];
-                    if (mappedBoneIdx == i && v.weights[k]) {
-                        cluster.vertexIdxs.push_back(scast<int>(j));
-                        cluster.weigths.push_back(scast<float>(v.weights[k]) * (1.0f / 255.0f));
-                    }
+                const size_t boneIdx = v.bones[k];
+                if (boneIdx == i && v.weights[k]) {
+                    cluster.vertexIdxs.push_back(scast<int>(j));
+                    cluster.weigths.push_back(scast<float>(v.weights[k]) * (1.0f / 255.0f));
                 }
             }
         }
@@ -233,12 +230,12 @@ void CollectClusters(const MetroMesh* mesh, const MetroSkeleton* skeleton, MyArr
 
 
 static FbxVector4 MetroVecToFbxVec(const vec3& v) {
-    return FbxVector4(v.z, v.y, v.x);
+    return FbxVector4(v.x, v.y, v.z);
 }
 
 static FbxVector4 MetroRotToFbxRot(const quat& q) {
     vec3 euler = QuatToEuler(q);
-    return FbxVector4(Rad2Deg(euler.z), Rad2Deg(euler.y), Rad2Deg(euler.x));
+    return FbxVector4(Rad2Deg(euler.x), Rad2Deg(euler.y), Rad2Deg(euler.z));
 }
 
 
@@ -694,6 +691,13 @@ StringArray SplitString(const CharString& s, const char delimiter) {
     return result;
 }
 
+static void RemapBones(MetroVertex& v, const BytesArray& remap) {
+    v.bones[0] = remap[v.bones[0]];
+    v.bones[1] = remap[v.bones[1]];
+    v.bones[2] = remap[v.bones[2]];
+    v.bones[3] = remap[v.bones[3]];
+}
+
 void MetroModel::ReadSubChunks(MemStream& stream) {
     while (!stream.Ended()) {
         const size_t chunkId = stream.ReadTyped<uint32_t>();
@@ -777,6 +781,8 @@ void MetroModel::ReadSubChunks(MemStream& stream) {
                     for (size_t i = 0; i < numVertices; ++i) {
                         *dstVerts = ConvertVertex(*srcVerts);
                         dstVerts->pos *= mCurrentMesh->scales.y;
+                        RemapBones(*dstVerts, mCurrentMesh->bonesRemap);
+
                         ++srcVerts;
                         ++dstVerts;
                     }

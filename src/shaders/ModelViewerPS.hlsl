@@ -4,7 +4,8 @@ Texture2D TexAlbedo     : register(t0);
 SamplerState Sampler0   : register(s0);
 
 float4 main(VSOutput IN) : SV_Target0 {
-    float3 normal = normalize(IN.normal);
+    float3 normal = normalize(IN.normal.xyz);
+    float vao = IN.normal.w;
     float diffuse = clamp(dot(normal, normalize(float3(-0.5f, 0.75f, 0.5f))), 0.35f, 1.0f);
 
     float4 albedo = TexAlbedo.Sample(Sampler0, IN.uv);
@@ -12,5 +13,5 @@ float4 main(VSOutput IN) : SV_Target0 {
         clip(-1.0f);
     }
 
-    return float4(albedo.rgb * diffuse, 1.0f);
+    return float4(albedo.rgb * diffuse * vao, 1.0f);
 }

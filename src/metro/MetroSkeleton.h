@@ -31,30 +31,32 @@ public:
     MetroSkeleton();
     ~MetroSkeleton();
 
-    bool                LoadFromData(const uint8_t* data, const size_t dataLength);
+    bool                    LoadFromData(const uint8_t* data, const size_t dataLength);
 
-    size_t              GetNumBones() const;
-    const quat&         GetBoneRotation(const size_t idx) const;
-    const vec3&         GetBonePosition(const size_t idx) const;
-    mat4                GetBoneTransform(const size_t idx) const;
-    mat4                GetBoneFullTransform(const size_t idx) const;
-    const size_t        GetBoneParentIdx(const size_t idx) const;
-    const CharString&   GetBoneName(const size_t idx) const;
+    size_t                  GetNumBones() const;
+    const quat&             GetBoneRotation(const size_t idx) const;
+    const vec3&             GetBonePosition(const size_t idx) const;
+    mat4                    GetBoneTransform(const size_t idx) const;
+    mat4                    GetBoneFullTransform(const size_t idx) const;
+    const size_t            GetBoneParentIdx(const size_t idx) const;
+    const CharString&       GetBoneName(const size_t idx) const;
 
-private:
-    void                DeserializeSelf(MemStream& stream, const uint8_t flags);
-    void                ReadSubChunks(MemStream& stream, const uint8_t flags);
+    const CharString&       GetMotionsStr() const;
 
 private:
-    uint32_t            ver;                // always 21 ???
-    uint32_t            crc;
-    RefString           pfnn;               // string
-    bool                has_as;
-    RefString           motions;            // string
-    RefString           source_info;        // string
-    RefString           parent_skeleton;    // string
-    MyArray<ParentMapped> parent_bone_maps;
-    MyArray<MetroBone>    bones;
+    void                    DeserializeSelf(MemStream& stream, const uint8_t flags);
+    void                    ReadSubChunks(MemStream& stream, const uint8_t flags);
 
-    StringArray         mStringsDict;
+private:
+    uint32_t                ver;                // always 21 ???
+    uint32_t                crc;
+    RefString               pfnn;
+    bool                    has_as;
+    RefString               motions;
+    RefString               source_info;
+    RefString               parent_skeleton;
+    MyArray<ParentMapped>   parent_bone_maps;
+    MyArray<MetroBone>      bones;
+
+    StringArray             mStringsDict;
 };

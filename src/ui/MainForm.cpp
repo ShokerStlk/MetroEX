@@ -4,6 +4,7 @@
 #include "metro/MetroTexture.h"
 #include "metro/MetroModel.h"
 #include "metro/MetroSound.h"
+#include "metro/MetroSkeleton.h"
 #include "metro/MetroMotion.h"
 
 #include <fstream>
@@ -85,7 +86,7 @@ namespace MetroEX {
 //#endif
 
         mImagePanel = gcnew ImagePanel();
-        this->splitContainer1->Panel2->Controls->Add(mImagePanel);
+        this->pnlViewers->Controls->Add(mImagePanel);
         mImagePanel->Dock = System::Windows::Forms::DockStyle::Fill;
         mImagePanel->Location = System::Drawing::Point(0, 0);
         mImagePanel->Name = L"mImagePanel";
@@ -94,7 +95,7 @@ namespace MetroEX {
 
 
         mSoundPanel = gcnew SoundPanel();
-        this->splitContainer1->Panel2->Controls->Add(mSoundPanel);
+        this->pnlViewers->Controls->Add(mSoundPanel);
         mSoundPanel->Dock = System::Windows::Forms::DockStyle::Fill;
         mSoundPanel->Location = System::Drawing::Point(0, 0);
         mSoundPanel->Name = L"mSoundPanel";
@@ -102,7 +103,7 @@ namespace MetroEX {
 
 
         mRenderPanel = gcnew RenderPanel();
-        this->splitContainer1->Panel2->Controls->Add(mRenderPanel);
+        this->pnlViewers->Controls->Add(mRenderPanel);
         mRenderPanel->Dock = System::Windows::Forms::DockStyle::Fill;
         mRenderPanel->Location = System::Drawing::Point(0, 0);
         mRenderPanel->Name = L"mRenderPanel";
@@ -112,8 +113,8 @@ namespace MetroEX {
             this->ShowErrorMessage("Failed to initialize DirectX 11 graphics!\n3D viewer will be unavailable.");
         }
 
-        mRenderPanel->Hide();
-        mSoundPanel->Hide();
+        this->SwitchViewPanel(PanelType::Texture);
+        this->SwitchInfoPanel(PanelType::Sound);
     }
 
     // toolstrip buttons
@@ -419,66 +420,14 @@ namespace MetroEX {
         System::Windows::Forms::MessageBox::Show(message, this->Text, buttons, mbicon);
     }
 
-    void MainForm::txtTreeSearch_TextChanged(System::Object^ sender, System::EventArgs^ e) {
-        if (mOriginalRootNode != nullptr) {
-            this->filterTimer->Stop();
-            this->filterTimer->Start();
-        }
-    }
-
-    void MainForm::filterTimer_Tick(System::Object^ sender, System::EventArgs^ e) {
-        this->filterTimer->Stop();
-
-        System::Windows::Forms::Cursor::Current = System::Windows::Forms::Cursors::WaitCursor;
-
-        this->treeView1->BeginUpdate();
-        this->treeView1->Nodes->Clear();
-
-        if (String::IsNullOrWhiteSpace(this->txtTreeSearch->Text)) {
-            this->treeView1->Nodes->Add(mOriginalRootNode);
-        } else {
-            TreeNode^ root = dynamic_cast<TreeNode^>(mOriginalRootNode->Clone());
-            this->FilterTreeView(root, this->txtTreeSearch->Text);
-            this->treeView1->Nodes->Add(root);
-
-            if (this->txtTreeSearch->Text->Length > 2) {
-                root->ExpandAll();
-            }
-        }
-
-        this->treeView1->EndUpdate();
-
-        System::Windows::Forms::Cursor::Current = System::Windows::Forms::Cursors::Arrow;
-    }
-
-    bool MainForm::FilterTreeView(TreeNode^ node, String^ text) {
-        System::Collections::Generic::List<TreeNode^>^ nodesToRemove = gcnew System::Collections::Generic::List<TreeNode^>();
-
-        for (int i = 0; i < node->Nodes->Count; i++) {
-            if (node->Nodes[i]->Nodes->Count > 0) {
-                if (!this->FilterTreeView(node->Nodes[i], this->txtTreeSearch->Text)) {
-                    nodesToRemove->Add(node->Nodes[i]);
-                }
-            } else if(!node->Nodes[i]->Text->Contains(this->txtTreeSearch->Text)) {
-                nodesToRemove->Add(node->Nodes[i]);
-            }
-        }
-
-        for (int i = 0; i < nodesToRemove->Count; i++) {
-            node->Nodes->Remove(nodesToRemove[i]);
-        }
-
-        delete nodesToRemove;
-
-        return node->Nodes->Count != 0;
-    }
-
     void MainForm::UpdateFilesList() {
         this->treeView1->BeginUpdate();
         this->treeView1->Nodes->Clear();
 
         if (mVFXReader) {
             this->txtTreeSearch->Text = String::Empty;
+
+            auto allFolders = mVFXReader->GetAllFolders();
 
             String^ rootName = marshal_as<String^>(mVFXReader->GetSelfName());
             TreeNode^ rootNode = this->treeView1->Nodes->Add(rootName);
@@ -491,6 +440,8 @@ namespace MetroEX {
             rootNode->Tag = rootIdx;
 
             const MetroFile& rootDir = mVFXReader->GetRootFolder();
+            allFolders.erase(std::remove(allFolders.begin(), allFolders.end(), rootDir.idx), allFolders.end());
+
             for (size_t idx = rootDir.firstFile; idx < rootDir.firstFile + rootDir.numFiles; ++idx) {
                 const MetroFile& mf = mVFXReader->GetFile(idx);
 
@@ -500,7 +451,15 @@ namespace MetroEX {
                     fileNode->ImageIndex = kImageIdxFile;
                     fileNode->SelectedImageIndex = kImageIdxFile;
                 } else {
-                    this->AddFoldersRecursive(mf, idx, rootNode);
+                    this->AddFoldersRecursive(mf, idx, rootNode, &allFolders);
+                }
+            }
+
+            //#NOTE_SK: some folders are w/o parent, dunno why, let's add them to the root
+            if (!allFolders.empty()) {
+                for (const size_t idx : allFolders) {
+                    const MetroFile& mf = mVFXReader->GetFile(idx);
+                    this->AddFoldersRecursive(mf, idx, rootNode, nullptr);
                 }
             }
         }
@@ -508,8 +467,12 @@ namespace MetroEX {
         this->treeView1->EndUpdate();
     }
 
-    void MainForm::AddFoldersRecursive(const MetroFile& dir, const size_t folderIdx, TreeNode^ rootItem) {
+    void MainForm::AddFoldersRecursive(const MetroFile& dir, const size_t folderIdx, TreeNode^ rootItem, MyArray<size_t>* allFolders) {
         TreeNode^ dirLeafNode = rootItem->Nodes->Add(marshal_as<String^>(dir.name));
+
+        if (allFolders) {
+            allFolders->erase(std::remove(allFolders->begin(), allFolders->end(), folderIdx), allFolders->end());
+        }
 
         dirLeafNode->ImageIndex = kImageIdxFoldeClosed;
         dirLeafNode->SelectedImageIndex = kImageIdxFoldeClosed;
@@ -524,7 +487,7 @@ namespace MetroEX {
                 fileNode->ImageIndex = kImageIdxFile;
                 fileNode->SelectedImageIndex = kImageIdxFile;
             } else {
-                this->AddFoldersRecursive(mf, idx, dirLeafNode);
+                this->AddFoldersRecursive(mf, idx, dirLeafNode, allFolders);
             }
         }
     }
@@ -566,8 +529,6 @@ namespace MetroEX {
     }
 
     void MainForm::ShowTexture(const size_t fileIdx) {
-        mSoundPanel->Hide();
-
         const MetroFile& mf = mVFXReader->GetFile(fileIdx);
 
         BytesArray content;
@@ -575,24 +536,26 @@ namespace MetroEX {
             MetroTexture texture;
             if (texture.LoadFromData(content.data(), content.size(), mf.name)) {
                 if (texture.IsCubemap()) {
-                    mImagePanel->Hide();
-                    mRenderPanel->Show();
-
+                    this->SwitchViewPanel(PanelType::Model);
                     mRenderPanel->SetCubemap(&texture);
                 } else {
-                    mRenderPanel->Hide();
-                    mImagePanel->Show();
-
+                    this->SwitchViewPanel(PanelType::Texture);
                     mImagePanel->SetTexture(&texture);
                 }
+
+                this->SwitchInfoPanel(PanelType::Texture);
+
+                this->lblImgPropCompression->Text = texture.IsCubemap() ? L"BC6H" : L"BC7";
+                this->lblImgPropWidth->Text = texture.GetWidth().ToString();
+                this->lblImgPropHeight->Text = texture.GetHeight().ToString();
+                this->lblImgPropMips->Text = texture.GetNumMips().ToString();
             }
         }
     }
 
     void MainForm::ShowModel(const size_t fileIdx) {
-        mImagePanel->Hide();
-        mSoundPanel->Hide();
-        mRenderPanel->Show();
+        this->SwitchViewPanel(PanelType::Model);
+        this->SwitchInfoPanel(PanelType::Model);
 
         const MetroFile& mf = mVFXReader->GetFile(fileIdx);
         BytesArray modelData;
@@ -600,8 +563,36 @@ namespace MetroEX {
             MetroModel* mdl = new MetroModel();
             if (mdl->LoadFromData(modelData.data(), modelData.size(), mVFXReader, fileIdx)) {
                 mRenderPanel->SetModel(mdl, mVFXReader, mTexturesDatabase);
+
+                this->lstMdlPropMotions->Items->Clear();
+                if (mdl->IsAnimated()) {
+                    const size_t numMotions = mdl->GetNumMotions();
+                    for (size_t i = 0; i < numMotions; ++i) {
+                        const MetroMotion* motion = mdl->GetMotion(i);
+                        this->lstMdlPropMotions->Items->Add(marshal_as<String^>(motion->GetName()));
+                    }
+
+                    this->lblMdlPropType->Text = L"Animated";
+                    this->lblMdlPropJoints->Text = mdl->GetSkeleton()->GetNumBones().ToString();
+                } else {
+                    this->lblMdlPropType->Text = L"Static";
+                    this->lblMdlPropJoints->Text = L"0";
+                }
+
+                size_t numVertices = 0, numTriangles = 0;
+                const size_t numMeshes = mdl->GetNumMeshes();
+                for (size_t i = 0; i < numMeshes; ++i) {
+                    const MetroMesh* mesh = mdl->GetMesh(i);
+                    numVertices += mesh->vertices.size();
+                    numTriangles += mesh->faces.size();
+                }
+
+                this->lblMdlPropVertices->Text = numVertices.ToString();
+                this->lblMdlPropTriangles->Text = numTriangles.ToString();
+
+                this->btnMdlPropPlayStopAnim->Text = L"Play";
             } else {
-                delete mdl;
+                MySafeDelete(mdl);
             }
         }
     }
@@ -618,8 +609,60 @@ namespace MetroEX {
             if (snd->LoadFromData(modelData.data(), modelData.size())) {
                 mSoundPanel->SetSound(snd);
             } else {
-                delete snd;
+                MySafeDelete(snd);
             }
+        }
+    }
+
+    void MainForm::SwitchViewPanel(PanelType t) {
+        switch (t) {
+            case PanelType::Texture: {
+                mRenderPanel->Hide();
+                mSoundPanel->Hide();
+                mImagePanel->Show();
+            } break;
+
+            case PanelType::Model: {
+                mImagePanel->Hide();
+                mSoundPanel->Hide();
+                mRenderPanel->Show();
+            } break;
+
+            case PanelType::Sound: {
+                mImagePanel->Hide();
+                mRenderPanel->Hide();
+                mSoundPanel->Show();
+            } break;
+        }
+    }
+
+    void MainForm::SwitchInfoPanel(PanelType t) {
+        switch (t) {
+            case PanelType::Texture: {
+                this->pnlMdlProps->Dock = System::Windows::Forms::DockStyle::None;
+                this->pnlMdlProps->Hide();
+
+                this->pnlImageProps->Location = System::Drawing::Point(0, 0);
+                this->pnlImageProps->Dock = System::Windows::Forms::DockStyle::Fill;
+                this->pnlImageProps->Show();
+            } break;
+
+            case PanelType::Model: {
+                this->pnlImageProps->Dock = System::Windows::Forms::DockStyle::None;
+                this->pnlImageProps->Hide();
+
+                this->pnlMdlProps->Location = System::Drawing::Point(0, 0);
+                this->pnlMdlProps->Dock = System::Windows::Forms::DockStyle::Fill;
+                this->pnlMdlProps->Show();
+            } break;
+
+            case PanelType::Sound: {
+                this->pnlMdlProps->Dock = System::Windows::Forms::DockStyle::None;
+                this->pnlMdlProps->Hide();
+
+                this->pnlImageProps->Dock = System::Windows::Forms::DockStyle::None;
+                this->pnlImageProps->Hide();
+            } break;
         }
     }
 
@@ -973,7 +1016,77 @@ namespace MetroEX {
 
         if (mExtractionProgressDlg) {
             mExtractionProgressDlg->StopProgressDialog();
-            SAFE_RELEASE(mExtractionProgressDlg);
+            MySafeRelease(mExtractionProgressDlg);
         }
+    }
+
+    // filter
+    void MainForm::txtTreeSearch_TextChanged(System::Object^ sender, System::EventArgs^ e) {
+        if (mOriginalRootNode != nullptr) {
+            this->filterTimer->Stop();
+            this->filterTimer->Start();
+        }
+    }
+
+    void MainForm::filterTimer_Tick(System::Object^ sender, System::EventArgs^ e) {
+        this->filterTimer->Stop();
+
+        System::Windows::Forms::Cursor::Current = System::Windows::Forms::Cursors::WaitCursor;
+
+        this->treeView1->BeginUpdate();
+        this->treeView1->Nodes->Clear();
+
+        if (String::IsNullOrWhiteSpace(this->txtTreeSearch->Text)) {
+            this->treeView1->Nodes->Add(mOriginalRootNode);
+        } else {
+            TreeNode^ root = safe_cast<TreeNode^>(mOriginalRootNode->Clone());
+            this->FilterTreeView(root, this->txtTreeSearch->Text);
+            this->treeView1->Nodes->Add(root);
+
+            if (this->txtTreeSearch->Text->Length > 2) {
+                root->ExpandAll();
+            }
+        }
+
+        this->treeView1->EndUpdate();
+
+        System::Windows::Forms::Cursor::Current = System::Windows::Forms::Cursors::Arrow;
+    }
+
+    bool MainForm::FilterTreeView(TreeNode^ node, String^ text) {
+        System::Collections::Generic::List<TreeNode^>^ nodesToRemove = gcnew System::Collections::Generic::List<TreeNode^>();
+
+        for (int i = 0; i < node->Nodes->Count; i++) {
+            if (node->Nodes[i]->Nodes->Count > 0) {
+                if (!this->FilterTreeView(node->Nodes[i], this->txtTreeSearch->Text)) {
+                    nodesToRemove->Add(node->Nodes[i]);
+                }
+            } else if (!node->Nodes[i]->Text->Contains(this->txtTreeSearch->Text)) {
+                nodesToRemove->Add(node->Nodes[i]);
+            }
+        }
+
+        for (int i = 0; i < nodesToRemove->Count; i++) {
+            node->Nodes->Remove(nodesToRemove[i]);
+        }
+
+        MySafeDelete(nodesToRemove);
+
+        return node->Nodes->Count != 0;
+    }
+
+    // property panels
+    // model props
+    void MainForm::lstMdlPropMotions_SelectedIndexChanged(System::Object^, System::EventArgs^) {
+        const int idx = lstMdlPropMotions->SelectedIndex;
+        if (idx >= 0) {
+            mRenderPanel->SwitchMotion(idx);
+        }
+    }
+
+    void MainForm::btnMdlPropPlayStopAnim_Click(System::Object^, System::EventArgs^) {
+        mRenderPanel->PlayAnim(!mRenderPanel->IsPlayingAnim());
+
+        this->btnMdlPropPlayStopAnim->Text = mRenderPanel->IsPlayingAnim() ? L"Stop" : L"Play";
     }
 }

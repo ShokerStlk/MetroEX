@@ -163,6 +163,9 @@ inline mat4 MatLookAt(const vec3& eye, const vec3& center, const vec3& up) {
 inline mat4 MatInverse(const mat4& m) {
     return glm::inverse(m);
 }
+inline mat4 MatTranspose(const mat4& m) {
+    return glm::transpose(m);
+}
 inline mat4 MatFromQuat(const quat& q) {
     return glm::toMat4(q);
 }

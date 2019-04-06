@@ -2,6 +2,7 @@
 #include "VFXReader.h"
 #include "MetroTexturesDatabase.h"
 #include "MetroSkeleton.h"
+#include "MetroMotion.h"
 
 #define FBXSDK_NEW_API
 #define FBXSDK_SHARED
@@ -64,6 +65,8 @@ MetroModel::MetroModel()
 }
 MetroModel::~MetroModel() {
     std::for_each(mMeshes.begin(), mMeshes.end(), [](MetroMesh* mesh) { delete mesh; });
+    std::for_each(mMotions.begin(), mMotions.end(), [](MetroMotion* motion) { delete motion; });
+    MySafeDelete(mSkeleton);
 }
 
 bool MetroModel::LoadFromData(const uint8_t* data, const size_t length, VFXReader* vfxReader, const size_t fileIdx) {
@@ -74,6 +77,8 @@ bool MetroModel::LoadFromData(const uint8_t* data, const size_t length, VFXReade
 
     MemStream stream(data, length);
     this->ReadSubChunks(stream);
+
+    this->LoadMotions();
 
     result = !mMeshes.empty();
 
@@ -213,7 +218,7 @@ void CollectClusters(const MetroMesh* mesh, const MetroSkeleton* skeleton, MyArr
             const MetroVertex& v = mesh->vertices[j];
 
             for (size_t k = 0; k < 4; ++k) {
-                const size_t rawIdx = v.bones[k] / 3;
+                const size_t rawIdx = v.bones[k];
                 if (rawIdx < mesh->bonesRemap.size()) {
                     const size_t mappedBoneIdx = mesh->bonesRemap[rawIdx];
                     if (mappedBoneIdx == i && v.weights[k]) {
@@ -237,7 +242,7 @@ static FbxVector4 MetroRotToFbxRot(const quat& q) {
 }
 
 
-FbxNode* CreateFBXSkeleton(FbxScene* scene, const MetroSkeleton* skeleton, MyArray<FbxNode*>& boneNodes) {
+static FbxNode* CreateFBXSkeleton(FbxScene* scene, const MetroSkeleton* skeleton, MyArray<FbxNode*>& boneNodes) {
     const size_t numBones = skeleton->GetNumBones();
     boneNodes.reserve(numBones);
 
@@ -277,6 +282,143 @@ FbxNode* CreateFBXSkeleton(FbxScene* scene, const MetroSkeleton* skeleton, MyArr
     }
 
     return rootNode;
+}
+
+// The curve code doesn't differentiate between angles and other data, so an interpolation from 179 to -179
+// will cause the bone to rotate all the way around through 0 degrees.  So here we make a second pass over the
+// rotation tracks to convert the angles into a more interpolation-friendly format.
+static void CorrectAnimTrackInterpolation(MyArray<FbxNode*>& boneNodes, FbxAnimLayer* animLayer) {
+    for (FbxNode* bone : boneNodes) {
+        FbxAnimCurveNode* rotCurveNode = bone->LclRotation.GetCurveNode(animLayer);
+        if (rotCurveNode) {
+            //#NOTE_SK: just because fucking FBX doesn't allow us to use quaternions for rotations
+            //          we'll get angles "clicking" issues
+            //          this is the only way I found to fight this issue
+            FbxAnimCurveFilterUnroll unrollFilter;
+            unrollFilter.SetForceAutoTangents(true);
+            unrollFilter.Apply(*rotCurveNode);
+        }
+    }
+}
+
+static void AddAnimTrackToScene(FbxScene* scene, const MetroMotion* motion, const CharString& animName, MyArray<FbxNode*>& skelNodes) {
+    FbxAnimStack* animStack = FbxAnimStack::Create(scene, animName.c_str());
+    FbxAnimLayer* animLayer = FbxAnimLayer::Create(scene->GetFbxManager(), "Base_Layer");
+    animStack->AddMember(animLayer);
+
+    const double animFPS = 30.0f;
+
+    FbxTime startTime, stopTime;
+    startTime.SetGlobalTimeMode(FbxTime::eFrames30);
+    stopTime.SetGlobalTimeMode(FbxTime::eFrames30);
+
+    startTime.SetSecondDouble(0.0);
+
+    // kinda hack to get animation duration
+    const double animDuration = scast<double>(motion->GetMotionTimeInSeconds());
+    stopTime.SetSecondDouble(animDuration);
+
+    FbxTimeSpan animTimeSpan;
+    animTimeSpan.Set(startTime, stopTime);
+    animStack->SetLocalTimeSpan(animTimeSpan);
+
+
+    FbxTime keyTime;
+    int keyIndex;
+
+    for (size_t i = 0; i < skelNodes.size(); ++i) {
+        FbxNode* boneNode = skelNodes[i];
+
+        if (motion->IsBoneAnimated(i)) {
+            const auto& posCurve = motion->mBonesPositions[i];
+            const auto& rotCurve = motion->mBonesRotations[i];
+
+            boneNode->LclRotation.GetCurveNode(animLayer, true);
+            boneNode->LclTranslation.GetCurveNode(animLayer, true);
+
+            FbxAnimCurve* offsetCurve[3] = {
+                boneNode->LclTranslation.GetCurve(animLayer, FBXSDK_CURVENODE_COMPONENT_X, true),
+                boneNode->LclTranslation.GetCurve(animLayer, FBXSDK_CURVENODE_COMPONENT_Y, true),
+                boneNode->LclTranslation.GetCurve(animLayer, FBXSDK_CURVENODE_COMPONENT_Z, true)
+            };
+
+            offsetCurve[0]->KeyModifyBegin();
+            offsetCurve[1]->KeyModifyBegin();
+            offsetCurve[2]->KeyModifyBegin();
+
+            if (!posCurve.points.empty()) {
+                if (posCurve.points.size() == 1) {
+                    FbxVector4 fv = MetroVecToFbxVec(vec3(posCurve.points.front().value));
+
+                    keyTime.SetSecondDouble(0.0);
+
+                    for (int k = 0; k < 3; ++k) {
+                        keyIndex = offsetCurve[k]->KeyAdd(keyTime);
+                        offsetCurve[k]->KeySetValue(keyIndex, scast<float>(fv[k]));
+                        offsetCurve[k]->KeySetInterpolation(keyIndex, FbxAnimCurveDef::eInterpolationLinear);
+                    }
+                } else {
+                    for (auto& pt : posCurve.points) {
+                        FbxVector4 fv = MetroVecToFbxVec(vec3(pt.value));
+
+                        keyTime.SetSecondDouble(scast<double>(pt.time));
+
+                        for (int k = 0; k < 3; ++k) {
+                            keyIndex = offsetCurve[k]->KeyAdd(keyTime);
+                            offsetCurve[k]->KeySetValue(keyIndex, scast<float>(fv[k]));
+                            offsetCurve[k]->KeySetInterpolation(keyIndex, FbxAnimCurveDef::eInterpolationCubic);
+                        }
+                    }
+                }
+            }
+
+            offsetCurve[0]->KeyModifyEnd();
+            offsetCurve[1]->KeyModifyEnd();
+            offsetCurve[2]->KeyModifyEnd();
+
+            FbxAnimCurve* rotationCurve[3] = {
+                boneNode->LclRotation.GetCurve(animLayer, FBXSDK_CURVENODE_COMPONENT_X, true),
+                boneNode->LclRotation.GetCurve(animLayer, FBXSDK_CURVENODE_COMPONENT_Y, true),
+                boneNode->LclRotation.GetCurve(animLayer, FBXSDK_CURVENODE_COMPONENT_Z, true)
+            };
+
+            rotationCurve[0]->KeyModifyBegin();
+            rotationCurve[1]->KeyModifyBegin();
+            rotationCurve[2]->KeyModifyBegin();
+
+            if (!rotCurve.points.empty()) {
+                if (rotCurve.points.size() == 1) {
+                    FbxVector4 fv = MetroRotToFbxRot(*rcast<const quat*>(&rotCurve.points.front().value));
+
+                    keyTime.SetSecondDouble(0.0);
+
+                    for (int k = 0; k < 3; ++k) {
+                        keyIndex = rotationCurve[k]->KeyAdd(keyTime);
+                        rotationCurve[k]->KeySetValue(keyIndex, scast<float>(fv[k]));
+                        rotationCurve[k]->KeySetInterpolation(keyIndex, FbxAnimCurveDef::eInterpolationLinear);
+                    }
+                } else {
+                    for (auto& pt : rotCurve.points) {
+                        FbxVector4 fv = MetroRotToFbxRot(*rcast<const quat*>(&pt.value));
+
+                        keyTime.SetSecondDouble(scast<double>(pt.time));
+
+                        for (int k = 0; k < 3; ++k) {
+                            keyIndex = rotationCurve[k]->KeyAdd(keyTime);
+                            rotationCurve[k]->KeySetValue(keyIndex, scast<float>(fv[k]));
+                            rotationCurve[k]->KeySetInterpolation(keyIndex, FbxAnimCurveDef::eInterpolationCubic);
+                        }
+                    }
+                }
+            }
+
+            rotationCurve[0]->KeyModifyEnd();
+            rotationCurve[1]->KeyModifyEnd();
+            rotationCurve[2]->KeyModifyEnd();
+        }
+    }
+
+    CorrectAnimTrackInterpolation(skelNodes, animLayer);
 }
 
 bool MetroModel::SaveAsFBX(const fs::path& filePath, VFXReader* vfxReader, MetroTexturesDatabase* database) {
@@ -452,9 +594,13 @@ bool MetroModel::SaveAsFBX(const fs::path& filePath, VFXReader* vfxReader, Metro
         }
 
         scene->AddPose(bindPose);
-    }
 
-    //AddAnimTrackToScene(scene, anim, "anim_01", bindPoseBones, skelNodes);
+
+        for (size_t i = 0; i < mMotions.size(); ++i) {
+            const MetroMotion* motion = mMotions[i];
+            AddAnimTrackToScene(scene, motion, motion->GetName(), boneNodes);
+        }
+    }
 
     // now export all this
     FbxDocumentInfo* info = scene->GetSceneInfo();
@@ -498,6 +644,10 @@ bool MetroModel::SaveAsFBX(const fs::path& filePath, VFXReader* vfxReader, Metro
     return true;
 }
 
+bool MetroModel::IsAnimated() const {
+    return mSkeleton != nullptr;
+}
+
 const AABBox& MetroModel::GetBBox() const {
     return mBBox;
 }
@@ -512,6 +662,18 @@ size_t MetroModel::GetNumMeshes() const {
 
 const MetroMesh* MetroModel::GetMesh(const size_t idx) const {
     return mMeshes[idx];
+}
+
+const MetroSkeleton* MetroModel::GetSkeleton() const {
+    return mSkeleton;
+}
+
+size_t MetroModel::GetNumMotions() const {
+    return mMotions.size();
+}
+
+const MetroMotion* MetroModel::GetMotion(const size_t idx) const {
+    return mMotions[idx];
 }
 
 
@@ -685,7 +847,7 @@ void MetroModel::ReadSubChunks(MemStream& stream) {
                     if (mVFXReader->ExtractFile(fileIdx, content)) {
                         mSkeleton = new MetroSkeleton();
                         if (!mSkeleton->LoadFromData(content.data(), content.size())) {
-                            SAFE_DELETE(mSkeleton);
+                            MySafeDelete(mSkeleton);
                         }
                     }
                 }
@@ -694,7 +856,7 @@ void MetroModel::ReadSubChunks(MemStream& stream) {
             case MC_SkeletonInline: {
                 mSkeleton = new MetroSkeleton();
                 if (!mSkeleton->LoadFromData(stream.GetDataAtCursor(), chunkSize)) {
-                    SAFE_DELETE(mSkeleton);
+                    MySafeDelete(mSkeleton);
                 }
             } break;
         }
@@ -724,6 +886,43 @@ void MetroModel::LoadLinkedMeshes(const StringArray& links) {
             }
 
             mCurrentMesh = nullptr;
+        }
+    }
+}
+
+void MetroModel::LoadMotions() {
+    CharString motionsStr;
+    if (mSkeleton) {
+        motionsStr = mSkeleton->GetMotionsStr();
+    }
+
+    if (motionsStr.empty()) {
+        return;
+    }
+
+    MyArray<size_t> motionFiles;
+
+    StringArray motionFolders = SplitString(motionsStr, ',');
+    for (const CharString& f : motionFolders) {
+        CharString fullFolderPath = "content\\motions\\" + f + "\\";
+
+        const auto& v = mVFXReader->FindFilesInFolder(fullFolderPath, ".m2");
+        motionFiles.insert(motionFiles.end(), v.begin(), v.end());
+    }
+
+    mMotions.reserve(motionFiles.size());
+    for (const size_t idx : motionFiles) {
+        BytesArray content;
+        if (mVFXReader->ExtractFile(idx, content)) {
+            const MetroFile& mf = mVFXReader->GetFile(idx);
+            CharString motionName = fs::path(mf.name).stem().u8string();
+
+            MetroMotion* motion = new MetroMotion(motionName);
+            if (motion->LoadFromData(content.data(), content.size())) {
+                mMotions.push_back(motion);
+            } else {
+                MySafeDelete(motion);
+            }
         }
     }
 }

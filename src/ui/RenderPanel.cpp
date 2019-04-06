@@ -2,6 +2,8 @@
 #pragma comment(lib, "d3d11.lib")
 
 #include "metro/MetroModel.h"
+#include "metro/MetroSkeleton.h"
+#include "metro/MetroMotion.h"
 #include "metro/MetroTexture.h"
 #include "metro/VFXReader.h"
 #include "metro/MetroTexturesDatabase.h"
@@ -42,6 +44,9 @@ namespace MetroEX {
         , mModel(nullptr)
         , mVFXReader(nullptr)
         , mDatabase(nullptr)
+        // animation
+        , mAnimation(nullptr)
+        , mAnimTimer(nullptr)
         // cubemap viewer stuff
         , mCamera(nullptr)
         , mCubemap(nullptr)
@@ -52,10 +57,19 @@ namespace MetroEX {
         , mViewingParams(nullptr)
         , mConstantBufferData(nullptr)
     {
+        this->components = gcnew System::ComponentModel::Container();
+
         mModelTextures = gcnew System::Collections::Generic::Dictionary<String^, IntPtr>(0);
         mCubemapTexture = new RenderTexture;
         mCubemapTexture->tex = nullptr;
         mCubemapTexture->srv = nullptr;
+
+        mAnimation = new Animation;
+
+        mAnimTimer = gcnew Timer(this->components);
+        mAnimTimer->Interval = 16;
+        mAnimTimer->Tick += gcnew System::EventHandler(this, &RenderPanel::AnimationTimer_Tick);
+        mAnimTimer->Stop();
     }
 
     bool RenderPanel::InitGraphics() {
@@ -156,12 +170,14 @@ namespace MetroEX {
         }
 
         D3D11_INPUT_ELEMENT_DESC vsDesc[] = {
-            { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, offsetof(MetroVertex, pos),    D3D11_INPUT_PER_VERTEX_DATA, 0},
-            { "NORMAL",   0, DXGI_FORMAT_R32G32B32_FLOAT, 0, offsetof(MetroVertex, normal), D3D11_INPUT_PER_VERTEX_DATA, 0},
-            { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,    0, offsetof(MetroVertex, uv0),    D3D11_INPUT_PER_VERTEX_DATA, 0}
+            { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT,    0, offsetof(MetroVertex, pos),     D3D11_INPUT_PER_VERTEX_DATA, 0},
+            { "TEXCOORD", 0, DXGI_FORMAT_R8G8B8A8_UINT,      0, offsetof(MetroVertex, bones),   D3D11_INPUT_PER_VERTEX_DATA, 0},
+            { "TEXCOORD", 1, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, offsetof(MetroVertex, normal),  D3D11_INPUT_PER_VERTEX_DATA, 0},
+            { "TEXCOORD", 2, DXGI_FORMAT_R8G8B8A8_UNORM,     0, offsetof(MetroVertex, weights), D3D11_INPUT_PER_VERTEX_DATA, 0},
+            { "TEXCOORD", 3, DXGI_FORMAT_R32G32_FLOAT,       0, offsetof(MetroVertex, uv0),     D3D11_INPUT_PER_VERTEX_DATA, 0}
         };
         pin_ptr<ID3D11InputLayout*> ilPtr(&mModelInputLayout);
-        result = mDevice->CreateInputLayout(vsDesc, 3, sModelViewerVSData, sizeof(sModelViewerVSData), ilPtr);
+        result = mDevice->CreateInputLayout(vsDesc, sizeof(vsDesc) / sizeof(vsDesc[0]), sModelViewerVSData, sizeof(sModelViewerVSData), ilPtr);
         if (FAILED(result)) {
             return false;
         }
@@ -227,12 +243,15 @@ namespace MetroEX {
         mCubemap = nullptr;
 
         if (mModel != model) {
-            SAFE_DELETE(mModel);
+            MySafeDelete(mModel);
 
             mModel = model;
             mVFXReader = vfxReader;
             mDatabase = database;
 
+            mCurrentMotion = nullptr;
+
+            this->ResetAnimation();
             this->CreateModelGeometries();
             this->CreateTextures();
             this->UpdateProjectionAndReset();
@@ -240,8 +259,12 @@ namespace MetroEX {
         }
     }
 
+    MetroModel* RenderPanel::GetModel() {
+        return mModel;
+    }
+
     void RenderPanel::SetCubemap(MetroTexture* cubemap) {
-        SAFE_DELETE(mModel);
+        MySafeDelete(mModel);
 
         mCubemap = cubemap;
 
@@ -250,14 +273,34 @@ namespace MetroEX {
         this->Render();
     }
 
+    void RenderPanel::SwitchMotion(const size_t idx) {
+        if (mModel && mModel->IsAnimated()) {
+            mCurrentMotion = mModel->GetMotion(idx);
+        }
+    }
+
+    bool RenderPanel::IsPlayingAnim() {
+        return mAnimTimer->Enabled;
+    }
+
+    void RenderPanel::PlayAnim(const bool play) {
+        if (play && mModel && mModel->IsAnimated() && mCurrentMotion) {
+            this->ResetAnimation();
+            mAnimTimer->Start();
+        } else {
+            mAnimTimer->Stop();
+        }
+    }
+
+
     bool RenderPanel::CreateRenderTargets() {
         if (!mDevice || !mDeviceContext || !mSwapChain) {
             return false;
         }
 
-        SAFE_RELEASE(mRenderTargetView);
-        SAFE_RELEASE(mDepthStencilBuffer);
-        SAFE_RELEASE(mDepthStencilView);
+        MySafeRelease(mRenderTargetView);
+        MySafeRelease(mDepthStencilBuffer);
+        MySafeRelease(mDepthStencilView);
 
         ID3D11Texture2D* backBuffer = nullptr;
         pin_ptr<ID3D11Texture2D*> backBufferPtr(&backBuffer);
@@ -353,13 +396,13 @@ namespace MetroEX {
         if (mModelGeometries) {
             for each (RenderGeometry* rg in mModelGeometries) {
                 if (rg) {
-                    SAFE_RELEASE(rg->vb);
-                    SAFE_RELEASE(rg->ib);
+                    MySafeRelease(rg->vb);
+                    MySafeRelease(rg->ib);
                     delete rg;
                 }
             }
 
-            SAFE_DELETE(mModelGeometries);
+            MySafeDelete(mModelGeometries);
         }
 
         if (!mModel) {
@@ -419,13 +462,13 @@ namespace MetroEX {
     void RenderPanel::CreateTextures() {
         for each (IntPtr ptr in mModelTextures->Values) {
             RenderTexture* rt = rcast<RenderTexture*>(ptr.ToPointer());
-            SAFE_RELEASE(rt->srv);
-            SAFE_RELEASE(rt->tex);
+            MySafeRelease(rt->srv);
+            MySafeRelease(rt->tex);
         }
         mModelTextures->Clear();
 
-        SAFE_RELEASE(mCubemapTexture->srv);
-        SAFE_RELEASE(mCubemapTexture->tex);
+        MySafeRelease(mCubemapTexture->srv);
+        MySafeRelease(mCubemapTexture->tex);
 
         if (mCubemap) {
             this->CreateRenderTexture(mCubemap, mCubemapTexture);
@@ -525,8 +568,102 @@ namespace MetroEX {
             pin_ptr<ID3D11ShaderResourceView*> srvPtr(&rt->srv);
             hr = mDevice->CreateShaderResourceView(rt->tex, &srvDesc, srvPtr);
             if (FAILED(hr)) {
-                SAFE_RELEASE(rt->tex);
+                MySafeRelease(rt->tex);
             }
+        }
+    }
+
+
+    struct HierarchyBone {
+        AnimBone                srcBone;
+        MyArray<HierarchyBone*> children;
+    };
+
+    static void FlattenHierarchyToArray(AnimBone*& arr, const HierarchyBone* hb) {
+        // parents go first
+        for (const HierarchyBone* next : hb->children) {
+            *arr = next->srcBone;
+            ++arr;
+        }
+
+        // children go next
+        for (const HierarchyBone* next : hb->children) {
+            FlattenHierarchyToArray(arr, next);
+        }
+    }
+
+    void RenderPanel::ResetAnimation() {
+        mAnimTimer->Stop();
+
+        for (auto& b : mConstantBufferData->bones) {
+            b = MatIdentity;
+        }
+
+        mAnimation->time = 0.0f;
+        if (mModel && mModel->IsAnimated()) {
+            const MetroSkeleton* skeleton = mModel->GetSkeleton();
+            const size_t numBones = skeleton->GetNumBones();
+
+            MyArray<HierarchyBone> hierarchy(numBones);
+
+            for (size_t i = 0; i < numBones; ++i) {
+                AnimBone& b = mAnimation->bones[i];
+                b.idx = i;
+                b.parentIdx = skeleton->GetBoneParentIdx(i);
+
+                hierarchy[b.idx].srcBone = b;
+                if (b.parentIdx != MetroBone::InvalidIdx) {
+                    hierarchy[b.parentIdx].children.push_back(&hierarchy[b.idx]);
+                }
+
+                mAnimation->bindPose[i] = skeleton->GetBoneFullTransform(i);
+                mAnimation->bindPoseInv[i] = MatInverse(mAnimation->bindPose[i]);
+            }
+
+            // now we flatten our hierarchy so that parent bones are always come befor their children
+            mAnimation->bones[0] = hierarchy.front().srcBone;
+            AnimBone* arr = &mAnimation->bones[1];
+            FlattenHierarchyToArray(arr, hierarchy.data());
+        }
+    }
+
+    void RenderPanel::UpdateAnimation(const float dt) {
+        if (mModel && mModel->IsAnimated() && mCurrentMotion) {
+            const size_t numBones = mCurrentMotion->GetNumBones();
+            const float animLen = mCurrentMotion->GetMotionTimeInSeconds();
+
+            if (mAnimation->time >= animLen) {
+                mAnimation->time -= animLen;
+            }
+
+            const size_t key = scast<size_t>(std::floorf((mAnimation->time / animLen) * mCurrentMotion->GetNumKeys()));
+
+            const MetroSkeleton* skeleton = mModel->GetSkeleton();
+
+            for (size_t i = 0; i < numBones; ++i) {
+                const AnimBone& b = mAnimation->bones[i];
+
+                quat q = mCurrentMotion->GetBoneRotation(b.idx, key);
+                vec3 t = mCurrentMotion->GetBonePosition(b.idx, key);
+
+                mat4& m = mConstantBufferData->bones[b.idx];
+
+                m = MatFromQuat(q);
+                m[3] = vec4(t, 1.0f);
+
+                if (b.parentIdx != MetroBone::InvalidIdx) {
+                    m = mConstantBufferData->bones[b.parentIdx] * m;
+                }
+            }
+
+            for (size_t i = 0; i < numBones; ++i) {
+                mat4& m = mConstantBufferData->bones[i];
+                m = m * mAnimation->bindPoseInv[i];
+            }
+
+            mAnimation->time += dt;
+
+            this->Render();
         }
     }
 
@@ -676,5 +813,11 @@ namespace MetroEX {
 
         this->UpdateViewMatrix();
         this->Render();
+    }
+
+    void RenderPanel::AnimationTimer_Tick(System::Object^, System::EventArgs^) {
+        const float kTickTimSec = 0.016f;
+
+        this->UpdateAnimation(kTickTimSec);
     }
 }

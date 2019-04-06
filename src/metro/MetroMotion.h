@@ -1,43 +1,60 @@
 #pragma once
 #include "MetroTypes.h"
 
-//#NOTE_SK: 256 bits, one per bone
-PACKED_STRUCT_BEGIN
-struct BonesBitset {
-    uint32_t    dwords[8];
+struct AttributeCurve {
+    struct AttribPoint {
+        float   time;
+        vec4    value;
+    };
 
-    inline bool IsPresent(const size_t idx) const {
-        const size_t i = idx >> 5;
-        assert(i <= 7);
-        const uint32_t mask = 1 << (idx & 0x1F);
-        return (dwords[i] & mask) == mask;
-    }
-} PACKED_STRUCT_END;
+    MyArray<AttribPoint> points;
+};
 
 class MetroMotion {
 public:
-    MetroMotion();
+    MetroMotion(const CharString& name = "");
     ~MetroMotion();
 
-    bool        LoadFromData(const void* data, const size_t dataLength);
+    bool                    LoadFromData(const void* data, const size_t dataLength);
+    const CharString&       GetName() const;
 
-private:
+    size_t                  GetBonesCRC() const;
+    size_t                  GetNumBones() const;
+    size_t                  GetNumLocators() const;
+    size_t                  GetNumKeys() const;
+    float                   GetMotionTimeInSeconds() const;
+
+    bool                    IsBoneAnimated(const size_t boneIdx) const;
+    quat                    GetBoneRotation(const size_t boneIdx, const size_t key) const;
+    vec3                    GetBonePosition(const size_t boneIdx, const size_t key) const;
+
+//private:
+    bool                    LoadInternal();
+    void                    ReadAttributeCurve(const uint8_t* curveData, AttributeCurve& curve, const size_t attribSize);
+
+//private:
+    CharString              mName;
+
     // header
-    size_t      mVersion;
-    size_t      mBonesCRC;
-    size_t      mNumBones;
+    size_t                  mVersion;
+    size_t                  mBonesCRC;
+    size_t                  mNumBones;
+    size_t                  mNumLocators;
     // info
-    size_t      mFlags;
-    float       mSpeed;
-    float       mAccrue;
-    float       mFalloff;
-    size_t      mNumKeys;
-    size_t      mJumpFrame;
-    size_t      mLandFrame;
-    BonesBitset mAffectedBones;
-    size_t      mMotionsDataSize;
-    size_t      mMotionsOffsetsSize;
-    BonesBitset mHighQualityBones;
+    size_t                  mFlags;
+    float                   mSpeed;
+    float                   mAccrue;
+    float                   mFalloff;
+    size_t                  mNumKeys;
+    size_t                  mJumpFrame;
+    size_t                  mLandFrame;
+    Bitset256               mAffectedBones;
+    size_t                  mMotionsDataSize;
+    size_t                  mMotionsOffsetsSize;
+    Bitset256               mHighQualityBones;
     // data
-    BytesArray  mMotionsData;
+    BytesArray              mMotionsData;
+    // curves
+    MyArray<AttributeCurve> mBonesRotations;
+    MyArray<AttributeCurve> mBonesPositions;
 };

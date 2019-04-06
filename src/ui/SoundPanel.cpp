@@ -18,8 +18,8 @@ namespace MetroEX {
                 mPlayer->Stop();
             }
 
-            SAFE_DELETE(mSound);
-            SAFE_DELETE(mPlayer);
+            MySafeDelete(mSound);
+            MySafeDelete(mPlayer);
 
             mSound = sound;
 
@@ -46,8 +46,8 @@ namespace MetroEX {
                 mPlayer->Stop();
             }
 
-            SAFE_DELETE(mSound);
-            SAFE_DELETE(mPlayer);
+            MySafeDelete(mSound);
+            MySafeDelete(mPlayer);
         }
     }
 

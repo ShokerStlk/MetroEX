@@ -98,6 +98,11 @@ namespace std {
 }
 
 
+inline bool StrEndsWith(const CharString& str, const CharString& ending) {
+    return str.size() >= ending.size() && str.compare(str.size() - ending.size(), ending.size(), ending) == 0;
+}
+
+
 class MemStream {
 public:
     MemStream(const void* _data, const size_t _size)
@@ -207,17 +212,46 @@ constexpr bool TestBit(const T& v, const T& bit) {
     return 0 != (v & bit);
 }
 
+inline uint32_t CountBitsU32(uint32_t x) {
+    x = (x & 0x55555555) + ((x >>  1) & 0x55555555);
+    x = (x & 0x33333333) + ((x >>  2) & 0x33333333);
+    x = (x & 0x0F0F0F0F) + ((x >>  4) & 0x0F0F0F0F);
+    x = (x & 0x00FF00FF) + ((x >>  8) & 0x00FF00FF);
+    x = (x & 0x0000FFFF) + ((x >> 16) & 0x0000FFFF);
+    return x;
+}
 
-#ifndef SAFE_RELEASE
-#define SAFE_RELEASE(ptr)   \
+PACKED_STRUCT_BEGIN
+struct Bitset256 {
+    uint32_t dwords[8];
+
+    inline size_t CountOnes() const {
+        size_t result = 0;
+        for (uint32_t x : dwords) {
+            result += CountBitsU32(x);
+        }
+        return result;
+    }
+
+    inline bool IsPresent(const size_t idx) const {
+        const size_t i = idx >> 5;
+        assert(i <= 7);
+        const uint32_t mask = 1 << (idx & 0x1F);
+        return (dwords[i] & mask) == mask;
+    }
+} PACKED_STRUCT_END;
+
+
+#ifndef MySafeRelease
+#define MySafeRelease(ptr)  \
     if (ptr) {              \
         (ptr)->Release();   \
         (ptr) = nullptr;    \
     }
 #endif
 
-#ifndef SAFE_DELETE
-#define SAFE_DELETE(ptr)    \
+#ifndef MySafeDelete
+#define MySafeDelete(ptr)   \
     if (ptr) {              \
         delete (ptr);       \
         (ptr) = nullptr;    \

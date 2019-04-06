@@ -114,17 +114,13 @@ namespace MetroEX {
             this->Close();
         }
         private: System::Void AboutDlg_Load(System::Object^  sender, System::EventArgs^  e) {
-            String^ rtfText = LR"({\rtf1\ansi\ansicpg1251\deff0\nouicompat\deflang1049{\fonttbl{\f0\fnil\fcharset204 Segoe UI;}{\f1\fnil\fcharset0 Calibri;}}
+            String^ rtfText = LR"({\rtf1\ansi\ansicpg1251\deff0\nouicompat\deflang1049{\fonttbl{\f0\fnil\fcharset204 Segoe UI;}{\f1\fnil\fcharset0 Segoe UI;}{\f2\fnil\fcharset0 Calibri;}}
 {\colortbl ;\red0\green77\blue187;\red243\green164\blue71;}
 {\*\generator Riched20 10.0.17763}\viewkind4\uc1 
-\pard\qc\cf1\b\f0\fs18 MetroEX\cf0\b0  v0.29b\par
+\pard\qc\cf1\b\f0\fs18 MetroEX\cf0\b0  v0.\f1\lang1033 3\f0\lang1049\par
 \par
-Created by Sergii "\cf2 iOrange\cf0 " Kudlai\par
-\par
-
-\pard\sa200\sl276\slmult1\qc 2019\f1\fs22\lang9\par
-}
- )";
+Created by Sergii "\cf2\b iOrange\cf0\b0 " Kudlai\f1\lang1033  in \f0\lang1049 2019\line\line\f1\lang1033 Contributors:\line\i Abramcumner\line Slik\f2\fs22\lang9\par
+} )";
 
             array<Byte>^ byteArray = System::Text::Encoding::ASCII->GetBytes(rtfText);
             System::IO::MemoryStream stream(byteArray);

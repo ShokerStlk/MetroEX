@@ -27,11 +27,11 @@ fs::path  ChooseFolderDialog::ChooseFolder(const CharString& title, void* parent
                     ::CoTaskMemFree(path);
                 }
 
-                SAFE_RELEASE(psi);
+                MySafeRelease(psi);
             }
         }
 
-        SAFE_RELEASE(pfd);
+        MySafeRelease(pfd);
     }
 
     return result;

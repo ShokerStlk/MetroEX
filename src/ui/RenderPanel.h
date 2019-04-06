@@ -7,6 +7,8 @@
 #include "camera.h"
 
 class MetroModel;
+class MetroSkeleton;
+class MetroMotion;
 class MetroTexture;
 class VFXReader;
 class MetroTexturesDatabase;
@@ -20,7 +22,6 @@ using namespace System::Drawing;
 
 
 namespace MetroEX {
-
     struct RenderTexture {
         ID3D11Texture2D*            tex;
         ID3D11ShaderResourceView*   srv;
@@ -49,25 +50,54 @@ namespace MetroEX {
         mat4 matProjection;
         mat4 matModelViewProj;
         vec4 camParams;
+        mat4 bones[256];
     };
+
+    struct AnimBone {
+        size_t  idx;
+        size_t  parentIdx;
+    };
+
+    struct Animation {
+        float       time;
+        AnimBone    bones[256];
+        mat4        bindPose[256];
+        mat4        bindPoseInv[256];
+    };
+
 
     public ref class RenderPanel : public System::Windows::Forms::Panel {
     public:
         RenderPanel();
 
-        bool    InitGraphics();
-        void    SetModel(MetroModel* model, VFXReader* vfxReader, MetroTexturesDatabase* database);
-        void    SetCubemap(MetroTexture* cubemap);
+    protected:
+        ~RenderPanel() {
+            if (components) {
+                delete components;
+            }
+        }
+
+    public:
+        bool        InitGraphics();
+        void        SetModel(MetroModel* model, VFXReader* vfxReader, MetroTexturesDatabase* database);
+        MetroModel* GetModel();
+        void        SetCubemap(MetroTexture* cubemap);
+
+        void        SwitchMotion(const size_t idx);
+        bool        IsPlayingAnim();
+        void        PlayAnim(const bool play);
 
     private:
-        bool    CreateRenderTargets();
-        void    UpdateModelMatrix();
-        void    UpdateViewMatrix();
-        void    UpdateProjectionAndReset();
-        void    CreateModelGeometries();
-        void    CreateTextures();
-        void    CreateRenderTexture(const MetroTexture* srcTexture, RenderTexture* rt);
-        void    Render();
+        bool        CreateRenderTargets();
+        void        UpdateModelMatrix();
+        void        UpdateViewMatrix();
+        void        UpdateProjectionAndReset();
+        void        CreateModelGeometries();
+        void        CreateTextures();
+        void        CreateRenderTexture(const MetroTexture* srcTexture, RenderTexture* rt);
+        void        ResetAnimation();
+        void        UpdateAnimation(const float dt);
+        void        Render();
 
     protected:
         virtual void OnResize(System::EventArgs^ e) override;
@@ -76,6 +106,10 @@ namespace MetroEX {
         virtual void OnMouseMove(System::Windows::Forms::MouseEventArgs^ e) override;
         virtual void OnMouseWheel(System::Windows::Forms::MouseEventArgs^ e) override;
 
+        void AnimationTimer_Tick(System::Object^ sender, System::EventArgs^ e);
+
+
+    private: System::ComponentModel::IContainer^  components;
 
     private:
         IDXGISwapChain*             mSwapChain;
@@ -99,6 +133,10 @@ namespace MetroEX {
         MetroModel*                 mModel;
         VFXReader*                  mVFXReader;
         MetroTexturesDatabase*      mDatabase;
+        // animations
+        const MetroMotion*          mCurrentMotion;
+        Animation*                  mAnimation;
+        Timer^                      mAnimTimer;
 
         // cubemap viewer stuff
         Camera*                     mCamera;

@@ -13,7 +13,7 @@ public:
 
     bool                    LoadFromData(const uint8_t* data, const size_t length, VFXReader* vfxReader, const size_t fileIdx);
     bool                    SaveAsOBJ(const fs::path& filePath, VFXReader* vfxReader, MetroTexturesDatabase* database);
-    bool                    SaveAsFBX(const fs::path& filePath, VFXReader* vfxReader, MetroTexturesDatabase* database);
+    bool                    SaveAsFBX(const fs::path& filePath, VFXReader* vfxReader, MetroTexturesDatabase* database, const bool withAnims);
 
     bool                    IsAnimated() const;
     const AABBox&           GetBBox() const;

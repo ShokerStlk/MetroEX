@@ -418,7 +418,7 @@ static void AddAnimTrackToScene(FbxScene* scene, const MetroMotion* motion, cons
     CorrectAnimTrackInterpolation(skelNodes, animLayer);
 }
 
-bool MetroModel::SaveAsFBX(const fs::path& filePath, VFXReader* vfxReader, MetroTexturesDatabase* database) {
+bool MetroModel::SaveAsFBX(const fs::path& filePath, VFXReader* vfxReader, MetroTexturesDatabase* database, const bool withAnims) {
     FbxManager* mgr = FbxManager::Create();
     if (!mgr) {
         return false;
@@ -592,10 +592,11 @@ bool MetroModel::SaveAsFBX(const fs::path& filePath, VFXReader* vfxReader, Metro
 
         scene->AddPose(bindPose);
 
-
-        for (size_t i = 0; i < mMotions.size(); ++i) {
-            const MetroMotion* motion = mMotions[i];
-            AddAnimTrackToScene(scene, motion, motion->GetName(), boneNodes);
+        if (withAnims) {
+            for (size_t i = 0; i < mMotions.size(); ++i) {
+                const MetroMotion* motion = mMotions[i];
+                AddAnimTrackToScene(scene, motion, motion->GetName(), boneNodes);
+            }
         }
     }
 
@@ -624,7 +625,7 @@ bool MetroModel::SaveAsFBX(const fs::path& filePath, VFXReader* vfxReader, Metro
     ios->SetBoolProp(EXP_FBX_EMBEDDED, false);
     ios->SetBoolProp(EXP_FBX_SHAPE, true);
     ios->SetBoolProp(EXP_FBX_GOBO, true);
-    ios->SetBoolProp(EXP_FBX_ANIMATION, true);
+    ios->SetBoolProp(EXP_FBX_ANIMATION, withAnims);
     ios->SetBoolProp(EXP_FBX_GLOBAL_SETTINGS, true);
 
     if (exp->Initialize(filePath.u8string().c_str(), format, ios)) {

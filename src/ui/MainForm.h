@@ -45,6 +45,7 @@ namespace MetroEX {
         // models
         bool        mdlSaveAsObj;
         bool        mdlSaveAsFbx;
+        bool        mdlSaveWithAnims;
         // textures
         bool        txUseBC3;
         bool        txSaveAsDds;

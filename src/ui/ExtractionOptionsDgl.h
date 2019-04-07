@@ -36,6 +36,9 @@ namespace MetroEX {
         bool IsModelsAsFbx() {
             return radioMdlAsFBX->Checked;
         }
+        bool IsModelsWithAnims() {
+            return chkMdlExportAnims->Checked;
+        }
         // sounds
         bool IsSoundsAsOgg() {
             return radioSndAsOGG->Checked;
@@ -63,6 +66,7 @@ namespace MetroEX {
     private: System::Windows::Forms::RadioButton^  radioSndAsWAV;
     private: System::Windows::Forms::Button^  btnCancel;
     private: System::Windows::Forms::Button^  btnOK;
+    private: System::Windows::Forms::CheckBox^  chkMdlExportAnims;
     protected:
 
     private:
@@ -91,6 +95,7 @@ namespace MetroEX {
             this->radioSndAsOGG = (gcnew System::Windows::Forms::RadioButton());
             this->btnCancel = (gcnew System::Windows::Forms::Button());
             this->btnOK = (gcnew System::Windows::Forms::Button());
+            this->chkMdlExportAnims = (gcnew System::Windows::Forms::CheckBox());
             this->groupBox1->SuspendLayout();
             this->groupBox2->SuspendLayout();
             this->groupBox3->SuspendLayout();
@@ -153,11 +158,12 @@ namespace MetroEX {
             // 
             // groupBox2
             // 
+            this->groupBox2->Controls->Add(this->chkMdlExportAnims);
             this->groupBox2->Controls->Add(this->radioMdlAsFBX);
             this->groupBox2->Controls->Add(this->radioMdlAsOBJ);
             this->groupBox2->Location = System::Drawing::Point(13, 136);
             this->groupBox2->Name = L"groupBox2";
-            this->groupBox2->Size = System::Drawing::Size(467, 70);
+            this->groupBox2->Size = System::Drawing::Size(467, 97);
             this->groupBox2->TabIndex = 1;
             this->groupBox2->TabStop = false;
             this->groupBox2->Text = L"Models options:";
@@ -189,7 +195,7 @@ namespace MetroEX {
             // 
             this->groupBox3->Controls->Add(this->radioSndAsWAV);
             this->groupBox3->Controls->Add(this->radioSndAsOGG);
-            this->groupBox3->Location = System::Drawing::Point(13, 213);
+            this->groupBox3->Location = System::Drawing::Point(13, 239);
             this->groupBox3->Name = L"groupBox3";
             this->groupBox3->Size = System::Drawing::Size(467, 71);
             this->groupBox3->TabIndex = 2;
@@ -221,7 +227,7 @@ namespace MetroEX {
             // 
             // btnCancel
             // 
-            this->btnCancel->Location = System::Drawing::Point(404, 294);
+            this->btnCancel->Location = System::Drawing::Point(404, 323);
             this->btnCancel->Name = L"btnCancel";
             this->btnCancel->Size = System::Drawing::Size(75, 23);
             this->btnCancel->TabIndex = 3;
@@ -231,7 +237,7 @@ namespace MetroEX {
             // 
             // btnOK
             // 
-            this->btnOK->Location = System::Drawing::Point(323, 294);
+            this->btnOK->Location = System::Drawing::Point(323, 323);
             this->btnOK->Name = L"btnOK";
             this->btnOK->Size = System::Drawing::Size(75, 23);
             this->btnOK->TabIndex = 4;
@@ -239,11 +245,23 @@ namespace MetroEX {
             this->btnOK->UseVisualStyleBackColor = true;
             this->btnOK->Click += gcnew System::EventHandler(this, &ExtractionOptionsDgl::btnOK_Click);
             // 
+            // chkMdlExportAnims
+            // 
+            this->chkMdlExportAnims->AutoSize = true;
+            this->chkMdlExportAnims->Checked = true;
+            this->chkMdlExportAnims->CheckState = System::Windows::Forms::CheckState::Checked;
+            this->chkMdlExportAnims->Location = System::Drawing::Point(7, 68);
+            this->chkMdlExportAnims->Name = L"chkMdlExportAnims";
+            this->chkMdlExportAnims->Size = System::Drawing::Size(109, 17);
+            this->chkMdlExportAnims->TabIndex = 2;
+            this->chkMdlExportAnims->Text = L"Export animations";
+            this->chkMdlExportAnims->UseVisualStyleBackColor = true;
+            // 
             // ExtractionOptionsDgl
             // 
             this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
             this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
-            this->ClientSize = System::Drawing::Size(494, 329);
+            this->ClientSize = System::Drawing::Size(494, 356);
             this->Controls->Add(this->btnOK);
             this->Controls->Add(this->btnCancel);
             this->Controls->Add(this->groupBox3);

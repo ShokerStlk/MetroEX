@@ -418,6 +418,7 @@ namespace MetroEX {
 
     void MainForm::saveAsFBXToolStripMenuItem_Click(System::Object^ sender, System::EventArgs^ e) {
         mExtractionCtx->mdlSaveAsFbx = true;
+        mExtractionCtx->mdlSaveWithAnims = true;
 
         if (!this->ExtractModel(*mExtractionCtx, fs::path())) {
             this->ShowErrorMessage("Failed to extract model!");
@@ -497,6 +498,7 @@ namespace MetroEX {
                 // models
                 mExtractionCtx->mdlSaveAsObj = dlgOptions.IsModelsAsObj();
                 mExtractionCtx->mdlSaveAsFbx = dlgOptions.IsModelsAsFbx();
+                mExtractionCtx->mdlSaveWithAnims = dlgOptions.IsModelsWithAnims();
                 // sounds
                 mExtractionCtx->sndSaveAsOgg = dlgOptions.IsSoundsAsOgg();
                 mExtractionCtx->sndSaveAsWav = dlgOptions.IsSoundsAsWav();
@@ -1049,7 +1051,7 @@ namespace MetroEX {
                     if (ctx.mdlSaveAsObj) {
                         mdl.SaveAsOBJ(resultPath, mVFXReader, mTexturesDatabase);
                     } else {
-                        mdl.SaveAsFBX(resultPath, mVFXReader, mTexturesDatabase);
+                        mdl.SaveAsFBX(resultPath, mVFXReader, mTexturesDatabase, ctx.mdlSaveWithAnims);
                     }
 
                     if (!ctx.batch) {

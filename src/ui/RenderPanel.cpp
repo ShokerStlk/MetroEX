@@ -608,6 +608,7 @@ namespace MetroEX {
 
             MyArray<HierarchyBone> hierarchy(numBones);
 
+            size_t rootBoneIdx = 0;
             for (size_t i = 0; i < numBones; ++i) {
                 AnimBone& b = mAnimation->bones[i];
                 b.idx = i;
@@ -616,16 +617,17 @@ namespace MetroEX {
                 hierarchy[b.idx].srcBone = b;
                 if (b.parentIdx != MetroBone::InvalidIdx) {
                     hierarchy[b.parentIdx].children.push_back(&hierarchy[b.idx]);
+                } else {
+                    rootBoneIdx = i;
                 }
 
-                mAnimation->bindPose[i] = skeleton->GetBoneFullTransform(i);
-                mAnimation->bindPoseInv[i] = MatInverse(mAnimation->bindPose[i]);
+                mAnimation->bindPoseInv[i] = MatInverse(skeleton->GetBoneFullTransform(i));
             }
 
             // now we flatten our hierarchy so that parent bones are always come befor their children
-            mAnimation->bones[0] = hierarchy.front().srcBone;
+            mAnimation->bones[0] = mAnimation->bones[rootBoneIdx];
             AnimBone* arr = &mAnimation->bones[1];
-            FlattenHierarchyToArray(arr, hierarchy.data());
+            FlattenHierarchyToArray(arr, &hierarchy[rootBoneIdx]);
         }
     }
 

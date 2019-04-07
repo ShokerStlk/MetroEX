@@ -11,10 +11,16 @@
 
 class VFXReader;
 class MetroTexturesDatabase;
+class MetroConfigsDatabase;
 
 namespace MetroEX {
     enum class FileType : size_t {
         Unknown,
+        Folder,
+        FolderBin,
+        Bin,
+        BinArchive,
+        BinEditable,
         Texture,
         Model,
         Motion,
@@ -31,6 +37,11 @@ namespace MetroEX {
     struct FileExtractionCtx {
         size_t      fileIdx;
         FileType    type;
+
+        size_t      customOffset;
+        size_t      customLength;
+        CharString  customFileName;
+
         // models
         bool        mdlSaveAsObj;
         bool        mdlSaveAsFbx;
@@ -89,13 +100,15 @@ namespace MetroEX {
 
         //
         VFXReader*                  mVFXReader;
-        MetroTexturesDatabase*      mTexturesDatabase;
 
         FileExtractionCtx*          mExtractionCtx;
         System::Threading::Thread^  mExtractionThread;
         IProgressDialog*            mExtractionProgressDlg;
 
         TreeNode^                   mOriginalRootNode;
+
+        MetroTexturesDatabase*      mTexturesDatabase;
+        MetroConfigsDatabase*       mConfigsDatabase;
 
     protected:
 
@@ -139,6 +152,9 @@ namespace MetroEX {
     private: System::Windows::Forms::TableLayoutPanel^  tableLayoutPanel1;
     private: System::Windows::Forms::TreeView^  treeView1;
     private: System::Windows::Forms::TextBox^  txtTreeSearch;
+    private: System::Windows::Forms::ContextMenuStrip^  ctxMenuExportBin;
+    private: System::Windows::Forms::ToolStripMenuItem^  extractBinRootToolStripMenuItem;
+    private: System::Windows::Forms::ToolStripMenuItem^  extractBinChunkToolStripMenuItem;
     private: System::Windows::Forms::TableLayoutPanel^  tableLayoutPanel2;
     private: System::Windows::Forms::Panel^  pnlViewers;
     private: System::Windows::Forms::Panel^  pnlMetaProps;
@@ -243,6 +259,9 @@ namespace MetroEX {
             this->toolStripSeparator2 = (gcnew System::Windows::Forms::ToolStripSeparator());
             this->toolBtnImgEnableAlpha = (gcnew System::Windows::Forms::ToolStripButton());
             this->filterTimer = (gcnew System::Windows::Forms::Timer(this->components));
+            this->ctxMenuExportBin = (gcnew System::Windows::Forms::ContextMenuStrip(this->components));
+            this->extractBinRootToolStripMenuItem = (gcnew System::Windows::Forms::ToolStripMenuItem());
+            this->extractBinChunkToolStripMenuItem = (gcnew System::Windows::Forms::ToolStripMenuItem());
             this->statusStrip1->SuspendLayout();
             (cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->splitContainer1))->BeginInit();
             this->splitContainer1->Panel1->SuspendLayout();
@@ -259,6 +278,7 @@ namespace MetroEX {
             this->ctxMenuExportRaw->SuspendLayout();
             this->ctxMenuExportFolder->SuspendLayout();
             this->toolStrip1->SuspendLayout();
+            this->ctxMenuExportBin->SuspendLayout();
             this->SuspendLayout();
             // 
             // statusStrip1
@@ -357,9 +377,16 @@ namespace MetroEX {
             // 
             this->imageListMain->ImageStream = (cli::safe_cast<System::Windows::Forms::ImageListStreamer^>(resources->GetObject(L"imageListMain.ImageStream")));
             this->imageListMain->TransparentColor = System::Drawing::Color::Transparent;
-            this->imageListMain->Images->SetKeyName(0, L"document.png");
-            this->imageListMain->Images->SetKeyName(1, L"folder_closed.png");
-            this->imageListMain->Images->SetKeyName(2, L"folder_opened.png");
+            this->imageListMain->Images->SetKeyName(0, L"folder_closed.png");
+            this->imageListMain->Images->SetKeyName(1, L"folder_opened.png");
+            this->imageListMain->Images->SetKeyName(2, L"file_any.png");
+            this->imageListMain->Images->SetKeyName(3, L"bin_unkn.ico");
+            this->imageListMain->Images->SetKeyName(4, L"bin_archive.ico");
+            this->imageListMain->Images->SetKeyName(5, L"bin_editable.ico");
+            this->imageListMain->Images->SetKeyName(6, L"dds.ico");
+            this->imageListMain->Images->SetKeyName(7, L"anim.ico");
+            this->imageListMain->Images->SetKeyName(8, L"vba.ico");
+            this->imageListMain->Images->SetKeyName(9, L"model.png");
             // 
             // txtTreeSearch
             // 
@@ -672,19 +699,19 @@ namespace MetroEX {
                     this->saveAsWAVToolStripMenuItem
             });
             this->ctxMenuExportSound->Name = L"ctxMenuExportSound";
-            this->ctxMenuExportSound->Size = System::Drawing::Size(150, 48);
+            this->ctxMenuExportSound->Size = System::Drawing::Size(151, 48);
             // 
             // saveAsOGGToolStripMenuItem
             // 
             this->saveAsOGGToolStripMenuItem->Name = L"saveAsOGGToolStripMenuItem";
-            this->saveAsOGGToolStripMenuItem->Size = System::Drawing::Size(149, 22);
+            this->saveAsOGGToolStripMenuItem->Size = System::Drawing::Size(150, 22);
             this->saveAsOGGToolStripMenuItem->Text = L"Save as OGG...";
             this->saveAsOGGToolStripMenuItem->Click += gcnew System::EventHandler(this, &MainForm::saveAsOGGToolStripMenuItem_Click);
             // 
             // saveAsWAVToolStripMenuItem
             // 
             this->saveAsWAVToolStripMenuItem->Name = L"saveAsWAVToolStripMenuItem";
-            this->saveAsWAVToolStripMenuItem->Size = System::Drawing::Size(149, 22);
+            this->saveAsWAVToolStripMenuItem->Size = System::Drawing::Size(150, 22);
             this->saveAsWAVToolStripMenuItem->Text = L"Save as WAV...";
             this->saveAsWAVToolStripMenuItem->Click += gcnew System::EventHandler(this, &MainForm::saveAsWAVToolStripMenuItem_Click);
             // 
@@ -786,6 +813,30 @@ namespace MetroEX {
             this->filterTimer->Interval = 1000;
             this->filterTimer->Tick += gcnew System::EventHandler(this, &MainForm::filterTimer_Tick);
             // 
+            // ctxMenuExportBin
+            // 
+            this->ctxMenuExportBin->Items->AddRange(gcnew cli::array< System::Windows::Forms::ToolStripItem^  >(2) {
+                this->extractBinRootToolStripMenuItem,
+                    this->extractBinChunkToolStripMenuItem
+            });
+            this->ctxMenuExportBin->Name = L"ctxMenuExportBin";
+            this->ctxMenuExportBin->RenderMode = System::Windows::Forms::ToolStripRenderMode::System;
+            this->ctxMenuExportBin->Size = System::Drawing::Size(181, 70);
+            // 
+            // extractBinRootToolStripMenuItem
+            // 
+            this->extractBinRootToolStripMenuItem->Name = L"extractBinRootToolStripMenuItem";
+            this->extractBinRootToolStripMenuItem->Size = System::Drawing::Size(180, 22);
+            this->extractBinRootToolStripMenuItem->Text = L"Extract root file...";
+            this->extractBinRootToolStripMenuItem->Click += gcnew System::EventHandler(this, &MainForm::extractBinRootToolStripMenuItem_Click);
+            // 
+            // extractBinChunkToolStripMenuItem
+            // 
+            this->extractBinChunkToolStripMenuItem->Name = L"extractBinChunkToolStripMenuItem";
+            this->extractBinChunkToolStripMenuItem->Size = System::Drawing::Size(180, 22);
+            this->extractBinChunkToolStripMenuItem->Text = L"Extract this file...";
+            this->extractBinChunkToolStripMenuItem->Click += gcnew System::EventHandler(this, &MainForm::extractBinChunkToolStripMenuItem_Click);
+            // 
             // MainForm
             // 
             this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
@@ -819,6 +870,7 @@ namespace MetroEX {
             this->ctxMenuExportFolder->ResumeLayout(false);
             this->toolStrip1->ResumeLayout(false);
             this->toolStrip1->PerformLayout();
+            this->ctxMenuExportBin->ResumeLayout(false);
             this->ResumeLayout(false);
             this->PerformLayout();
 
@@ -846,6 +898,9 @@ namespace MetroEX {
         void saveAsFBXToolStripMenuItem_Click(System::Object^ sender, System::EventArgs^ e);
         void saveAsOGGToolStripMenuItem_Click(System::Object^ sender, System::EventArgs^ e);
         void saveAsWAVToolStripMenuItem_Click(System::Object^ sender, System::EventArgs^ e);
+        void extractBinRootToolStripMenuItem_Click(System::Object^ sender, System::EventArgs^ e);
+        void extractBinChunkToolStripMenuItem_Click(System::Object^ sender, System::EventArgs^ e);
+
         void extractFolderToolStripMenuItem_Click(System::Object^ sender, System::EventArgs^ e);
         void extractFolderWithConversionToolStripMenuItem_Click(System::Object^ sender, System::EventArgs^ e);
 
@@ -853,7 +908,8 @@ namespace MetroEX {
         void ShowErrorMessage(String^ message);
         //
         void UpdateFilesList();
-        void AddFoldersRecursive(const MetroFile& dir, const size_t folderIdx, TreeNode^ rootItem, MyArray<size_t>* allFolders);
+        void AddFoldersRecursive(const MetroFile& dir, const size_t folderIdx, TreeNode^ rootItem, const size_t configBinIdx);
+        void AddBinaryArchive(const MetroFile& mf, const size_t fileIdx, TreeNode^ rootItem);
         void DetectFileAndShow(const size_t fileIdx);
         void ShowTexture(const size_t fileIdx);
         void ShowModel(const size_t fileIdx);

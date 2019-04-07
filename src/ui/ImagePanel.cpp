@@ -38,7 +38,7 @@ namespace MetroEX {
 
             Bitmap^ bmp = gcnew Bitmap(w, h, Imaging::PixelFormat::Format32bppArgb);
 
-            Rectangle rc(0, 0, w, h);
+			Drawing::Rectangle rc(0, 0, w, h);
             Imaging::BitmapData^ bmpData = bmp->LockBits(rc, Imaging::ImageLockMode::WriteOnly, bmp->PixelFormat);
             memcpy(bmpData->Scan0.ToPointer(), pixels.data(), pixels.size());
             bmp->UnlockBits(bmpData);

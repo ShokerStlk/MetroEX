@@ -73,6 +73,12 @@
     <ClCompile Include="src\metro\MetroMotion.cpp">
       <Filter>src\metro</Filter>
     </ClCompile>
+    <ClCompile Include="src\log.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\metro\MetroDatabases.h">
+      <Filter>src\metro</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ui\RenderPanel.h">
@@ -151,6 +157,12 @@
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="src\metro\MetroMotion.h">
+      <Filter>src\metro</Filter>
+    </ClInclude>
+    <ClInclude Include="src\log.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\metro\MetroConfigNames.h">
       <Filter>src\metro</Filter>
     </ClInclude>
   </ItemGroup>

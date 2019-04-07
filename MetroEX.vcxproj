@@ -108,8 +108,10 @@
     <ClCompile Include="src\camera.cpp" />
     <ClCompile Include="src\dds_utils.cpp" />
     <ClCompile Include="src\hashing.cpp" />
+    <ClCompile Include="src\log.cpp" />
     <ClCompile Include="src\metro\MetroConfigDatabase.cpp" />
     <ClCompile Include="src\metro\MetroLevel.cpp" />
+    <ClCompile Include="src\metro\MetroDatabases.h" />
     <ClCompile Include="src\metro\MetroModel.cpp" />
     <ClCompile Include="src\metro\MetroMotion.cpp" />
     <ClCompile Include="src\metro\MetroReflection.cpp" />
@@ -130,6 +132,8 @@
     <ClInclude Include="libs\bc7enc16\bc7decomp.h" />
     <ClInclude Include="libs\lz4\lz4.h" />
     <ClInclude Include="libs\xxhash\xxhash.h" />
+    <ClInclude Include="src\log.h" />
+    <ClInclude Include="src\metro\MetroConfigNames.h" />
     <ClInclude Include="src\camera.h" />
     <ClInclude Include="src\dds_utils.h" />
     <ClInclude Include="src\hashing.h" />

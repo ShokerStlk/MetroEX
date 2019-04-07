@@ -605,7 +605,7 @@ namespace MetroEX {
         void ShowErrorMessage(String^ message);
         //
         void UpdateFilesList();
-        void AddFoldersRecursive(const MetroFile& dir, const size_t folderIdx, TreeNode^ rootItem);
+        void AddFoldersRecursive(const MetroFile& dir, const size_t folderIdx, TreeNode^ rootItem, const size_t configBinIdx);
         void AddBinaryArchive(const MetroFile& mf, const size_t fileIdx, TreeNode^ rootItem);
         void DetectFileAndShow(const size_t fileIdx);
         void ShowTexture(const size_t fileIdx);

@@ -10,7 +10,7 @@
 #include <cassert>
 
 #include "xxhash.h"
-#include "log.h"
+
 
 #define STRINGIFY_UTIL_(s) #s
 #define STRINGIFY(s) STRINGIFY_UTIL_(s)

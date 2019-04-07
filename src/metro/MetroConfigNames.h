@@ -11,33 +11,30 @@ public:
     MyDict<uint32_t, CharString>  mCRC32ToPath;
 
     // Get DB
-    static ConfigNamesDB* Get()	{
+    static ConfigNamesDB& Get()	{
         static ConfigNamesDB instance;
-        return &instance;
+        return instance;
     }
 
     // Convert file path to CRC32 hash, add it to DB
-    void AddName(CharString path) {
+    void AddName(const CharString& path) {
         const uint32_t pathCRC = Hash_CalculateCRC32(path);
         mCRC32ToPath.insert({ pathCRC, path });
-    };
+    }
 
     // Find file path by it's CRC32 hash name
-    CharString FindByCRC32(uint32_t pathCRC) {
+    const CharString& FindByCRC32(const uint32_t pathCRC) {
         auto it = mCRC32ToPath.find(pathCRC);
-        if (it != mCRC32ToPath.end())
-        {
+        if (it != mCRC32ToPath.end()) {
             return it->second;
         }
 
         return "";
-    };
+    }
 
     // Disable object copy / assignment 
     ConfigNamesDB(ConfigNamesDB const&) = delete;
     void operator=(ConfigNamesDB const&) = delete;
-
-protected:
 
 private:
     ConfigNamesDB()	{

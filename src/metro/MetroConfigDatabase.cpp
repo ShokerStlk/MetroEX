@@ -21,33 +21,19 @@ bool MetroConfigsDatabase::LoadFromData(const void* data, const size_t length) {
         const uint32_t nameCrc = stream.ReadTyped<uint32_t>();
         const uint32_t bodySize = stream.ReadTyped<uint32_t>();
 
-        ConfigNamesDB* cfgNamesDB = ConfigNamesDB::Get();
-
         ConfigInfo ci;
-        ci.name_crc = nameCrc;
-        ci.name_decrypted = cfgNamesDB->FindByCRC32(nameCrc);
+        ci.nameCRC = nameCrc;
+        ci.nameStr = ConfigNamesDB::Get().FindByCRC32(nameCrc);
         ci.offset = stream.GetCursor();
         ci.length = bodySize;
 
-        if (ci.name_decrypted.empty()) {
+        if (ci.nameStr.empty()) {
             mStatsTotalEncryptedNames++;
-        }
-        else {
+        } else {
             mStatsTotalDecryptedNames++;
         }
 
-        mConfigsChunks.push_back(ci);
-
-#if 0
-        // Extract materials.bin from configs.bin to user disk 
-        if (ci.name_decrypted == "content\\scripts\\materials.bin") {
-            std::ofstream file("materials.bin", std::ofstream::binary);
-            if (file.good()) {
-                file.write((char*)stream.GetDataAtCursor(), bodySize);
-                file.flush();
-            }
-        }
-#endif
+        mConfigsChunks.emplace_back(ci);
 
         stream.SkipBytes(bodySize);
     }
@@ -58,32 +44,26 @@ bool MetroConfigsDatabase::LoadFromData(const void* data, const size_t length) {
     return !mConfigsChunks.empty();
 }
 
-MetroConfigsDatabase::ConfigInfo* MetroConfigsDatabase::FindFile(uint32_t nameCRC32)
-{
-    for (ConfigInfo& ci : mConfigsChunks) {
-        if (ci.name_crc == nameCRC32)
-        {
-            return &ci;
-        }
-    }
+const MetroConfigsDatabase::ConfigInfo* MetroConfigsDatabase::FindFile(const uint32_t nameCRC) const {
+    auto it = std::find_if(mConfigsChunks.begin(), mConfigsChunks.end(), [nameCRC](const ConfigInfo& ci)->bool {
+        return ci.nameCRC == nameCRC;
+    });
 
-    return nullptr;
+    return (it == mConfigsChunks.end()) ? nullptr : &(*it);
 }
 
-MetroConfigsDatabase::ConfigInfo* MetroConfigsDatabase::FindFile(CharString name)
-{
-    for (ConfigInfo& ci : mConfigsChunks) {
-        if (ci.name_decrypted == name)
-        {
-            return &ci;
-        }
-    }
+const MetroConfigsDatabase::ConfigInfo* MetroConfigsDatabase::FindFile(const CharString& name) const {
+    auto it = std::find_if(mConfigsChunks.begin(), mConfigsChunks.end(), [&name](const ConfigInfo& ci)->bool {
+        return ci.nameStr == name;
+    });
 
-    return nullptr;
+    return (it == mConfigsChunks.end()) ? nullptr : &(*it);
 }
 
-MetroConfigsDatabase::ConfigInfo* MetroConfigsDatabase::GetFileByIdx(size_t chunkIdx)
-{
-    assert(chunkIdx < mConfigsChunks.size());
-    return &mConfigsChunks[chunkIdx];
+size_t MetroConfigsDatabase::GetNumFiles() const {
+    return mConfigsChunks.size();
+}
+
+const MetroConfigsDatabase::ConfigInfo& MetroConfigsDatabase::GetFileByIdx(const size_t chunkIdx) const {
+    return mConfigsChunks[chunkIdx];
 }

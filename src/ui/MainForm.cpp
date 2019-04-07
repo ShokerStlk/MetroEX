@@ -22,30 +22,30 @@ enum class eNodeEventType : size_t {
     Close
 };
 
-static const int    kEmptyIdx = -1;
-static const size_t kEmptyCustomValue = -1;
+static const size_t kEmptyIdx               = ~0;
+static const size_t kEmptyCustomValue       = ~0;
 
-static const int kImageIdxFolderClosed  = 0;
-static const int kImageIdxFolderOpen    = 1;
-static const int kImageIdxFile          = 2;
-static const int kImageIdxBinUnkn       = 3;
-static const int kImageIdxBinArchive    = 4;
-static const int kImageIdxBinEditable   = 5;
-static const int kImageIdxTexture       = 6;
-static const int kImageIdxMotion        = 7;
-static const int kImageIdxSound         = 8;
-static const int kImageIdxModel         = 9;
+static const int    kImageIdxFolderClosed   = 0;
+static const int    kImageIdxFolderOpen     = 1;
+static const int    kImageIdxFile           = 2;
+static const int    kImageIdxBinUnkn        = 3;
+static const int    kImageIdxBinArchive     = 4;
+static const int    kImageIdxBinEditable    = 5;
+static const int    kImageIdxTexture        = 6;
+static const int    kImageIdxMotion         = 7;
+static const int    kImageIdxSound          = 8;
+static const int    kImageIdxModel          = 9;
 
-static const size_t kFileIdxMask        = size_t(~0) >> 1;
-static const size_t kFolderSortedFlag   = size_t(1) << ((sizeof(size_t) * 8) - 1);
+static const size_t kFileIdxMask            = size_t(~0) >> 1;
+static const size_t kFolderSortedFlag       = size_t(1) << ((sizeof(size_t) * 8) - 1);
 
 namespace MetroEX {
     ref struct FileTagData {
         FileType fileType; // type of file
-        size_t fileIdx; // index inside .vfx
-        size_t subFileIdx; // index inside .bin database
+        size_t   fileIdx; // index inside .vfx
+        size_t   subFileIdx; // index inside .bin database
 
-        FileTagData(FileType _fileType, size_t _fileIdx, size_t _subFileIdx) {
+        FileTagData(const FileType _fileType, const size_t _fileIdx, const size_t _subFileIdx) {
             fileType = _fileType;
             fileIdx = _fileIdx;
             subFileIdx = _subFileIdx;
@@ -294,14 +294,12 @@ namespace MetroEX {
     void MainForm::treeView1_NodeMouseClick(System::Object^, System::Windows::Forms::TreeNodeMouseClickEventArgs^ e) {
         if (e->Button == System::Windows::Forms::MouseButtons::Right) {
             FileTagData^ fileData = safe_cast<FileTagData^>(e->Node->Tag);
-            bool isSubFile = fileData->subFileIdx != kEmptyIdx;
+            const bool isSubFile = fileData->subFileIdx != kEmptyIdx;
 
             const size_t fileIdx = fileData->fileIdx & kFileIdxMask;
             const MetroFile& mf = mVFXReader->GetFile(fileIdx);
 
-            const FileType fileType = isSubFile ?
-                fileData->fileType :
-                DetectFileType(mf);
+            const FileType fileType = isSubFile ? fileData->fileType : DetectFileType(mf);
 
             memset(mExtractionCtx, 0, sizeof(FileExtractionCtx));
             mExtractionCtx->fileIdx = fileIdx;
@@ -327,10 +325,10 @@ namespace MetroEX {
                     case FileType::Bin: {
                         if (isSubFile) {
                             size_t chunkIdx = fileData->subFileIdx;
-                            MetroConfigsDatabase::ConfigInfo* ci = mConfigsDatabase->GetFileByIdx(chunkIdx);
+                            const MetroConfigsDatabase::ConfigInfo& ci = mConfigsDatabase->GetFileByIdx(chunkIdx);
 
-                            mExtractionCtx->customOffset = ci->offset;
-                            mExtractionCtx->customLength = ci->length;
+                            mExtractionCtx->customOffset = ci.offset;
+                            mExtractionCtx->customLength = ci.length;
                             mExtractionCtx->customFileName = marshal_as<CharString>(e->Node->Text);
                             this->ctxMenuExportBin->Show(this->treeView1, e->X, e->Y);
                         } else {
@@ -574,6 +572,9 @@ namespace MetroEX {
         if (mVFXReader) {
             this->txtTreeSearch->Text = String::Empty;
 
+            // Get idx of config.bin
+            const size_t configBinIdx = mVFXReader->FindFile("content\\config.bin");
+
             String^ rootName = marshal_as<String^>(mVFXReader->GetSelfName());
             TreeNode^ rootNode = this->treeView1->Nodes->Add(rootName);
             size_t rootIdx = 0;
@@ -593,7 +594,7 @@ namespace MetroEX {
                     fileNode->Tag = gcnew FileTagData(fileType, idx, kEmptyIdx);
                     UpdateNodeIcon(fileNode);
                 } else {
-                    this->AddFoldersRecursive(mf, idx, rootNode);
+                    this->AddFoldersRecursive(mf, idx, rootNode, configBinIdx);
                 }
             }
         }
@@ -601,10 +602,7 @@ namespace MetroEX {
         this->treeView1->EndUpdate();
     }
 
-    void MainForm::AddFoldersRecursive(const MetroFile& dir, const size_t folderIdx, TreeNode^ rootItem) {
-        // Get idx of config.bin
-        size_t configBinIdx = mVFXReader->FindFile("content\\config.bin");
-
+    void MainForm::AddFoldersRecursive(const MetroFile& dir, const size_t folderIdx, TreeNode^ rootItem, const size_t configBinIdx) {
         // Add root folder
         TreeNode^ dirLeafNode = rootItem->Nodes->Add(marshal_as<String^>(dir.name));
 
@@ -629,7 +627,7 @@ namespace MetroEX {
                 }
             } else {
                 //==> Add folder to list
-                this->AddFoldersRecursive(mf, idx, dirLeafNode);
+                this->AddFoldersRecursive(mf, idx, dirLeafNode, configBinIdx);
             }
         }
     }
@@ -639,14 +637,14 @@ namespace MetroEX {
         fileNode->Tag = gcnew FileTagData(FileType::BinArchive, fileIdx, kEmptyIdx);
         UpdateNodeIcon(fileNode);
 
-        for (int chunkIdx = 0; chunkIdx < mConfigsDatabase->mConfigsChunks.size(); ++chunkIdx) {
-            const MetroConfigsDatabase::ConfigInfo& ci = mConfigsDatabase->mConfigsChunks.at(chunkIdx);
+        for (size_t idx = 0, numFiles = mConfigsDatabase->GetNumFiles(); idx < numFiles; ++idx) {
+            const MetroConfigsDatabase::ConfigInfo& ci = mConfigsDatabase->GetFileByIdx(idx);
 
-            bool isNameDecrypted = ci.name_decrypted != "";
+            const bool isNameDecrypted = !ci.nameStr.empty();
 
             String^ fileName = (isNameDecrypted ?
-                marshal_as<String^>(ci.name_decrypted) :
-                String::Format("unknCRC32_0x{0:X}.bin", ci.name_crc)
+                marshal_as<String^>(ci.nameStr) :
+                String::Format("unknCRC32_0x{0:X}.bin", ci.nameCRC)
             );
 
             TreeNode^ lastNode = fileNode; // folder to add file
@@ -656,7 +654,7 @@ namespace MetroEX {
 
                 // Add all sub-folders
                 String^ curPath = pathArray[0];
-                for (int i = 0; i < (pathArray->Length - 1); i++) {
+                for (int i = 0; i < (pathArray->Length - 1); ++i) {
                     array<TreeNode^>^ folderNodes = lastNode->Nodes->Find(curPath, false);
                     if (folderNodes->Length == 0) {
                         // Create new folder node
@@ -678,7 +676,7 @@ namespace MetroEX {
 
             // Add binary file
             TreeNode^ chunkNode = lastNode->Nodes->Add(fileName);
-            chunkNode->Tag = gcnew FileTagData(FileType::Bin, fileIdx, chunkIdx);
+            chunkNode->Tag = gcnew FileTagData(FileType::Bin, fileIdx, idx);
             UpdateNodeIcon(chunkNode);
         }
     }

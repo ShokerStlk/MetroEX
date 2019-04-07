@@ -1,8 +1,23 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
+    <ClCompile Include="src\ui\RenderPanel.cpp">
+      <Filter>src\ui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ui\ImagePanel.cpp">
+      <Filter>src\ui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ui\MainForm.cpp">
+      <Filter>src\ui</Filter>
+    </ClCompile>
     <ClCompile Include="src\Application.cpp">
       <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\metro\VFXReader.cpp">
+      <Filter>src\metro</Filter>
+    </ClCompile>
+    <ClCompile Include="src\metro\MetroTexture.cpp">
+      <Filter>src\metro</Filter>
     </ClCompile>
     <ClCompile Include="libs\lz4\lz4.c">
       <Filter>libs\lz4</Filter>
@@ -13,79 +28,79 @@
     <ClCompile Include="libs\xxhash\xxhash.c">
       <Filter>libs\xxhash</Filter>
     </ClCompile>
-    <ClCompile Include="src\metro\VFXReader.cpp">
-      <Filter>src\Metro\VFXArchives</Filter>
-    </ClCompile>
-    <ClCompile Include="src\metro\MetroConfigDatabase.cpp">
-      <Filter>src\Metro\Databases\ConfigsDatabase</Filter>
-    </ClCompile>
-    <ClCompile Include="src\metro\MetroTexturesDatabase.cpp">
-      <Filter>src\Metro\Databases\TexturesDatabase</Filter>
-    </ClCompile>
-    <ClCompile Include="src\metro\MetroReflection.cpp">
-      <Filter>src\Metro\Types</Filter>
-    </ClCompile>
-    <ClCompile Include="src\metro\MetroLevel.cpp">
-      <Filter>src\Metro\Objects\Level</Filter>
-    </ClCompile>
-    <ClCompile Include="src\metro\MetroModel.cpp">
-      <Filter>src\Metro\Objects\Model</Filter>
-    </ClCompile>
-    <ClCompile Include="src\metro\MetroMotion.cpp">
-      <Filter>src\Metro\Objects\Motion</Filter>
-    </ClCompile>
-    <ClCompile Include="src\metro\MetroSkeleton.cpp">
-      <Filter>src\Metro\Objects\Skeleton</Filter>
-    </ClCompile>
-    <ClCompile Include="src\metro\MetroSound.cpp">
-      <Filter>src\Metro\Objects\Sound</Filter>
-    </ClCompile>
-    <ClCompile Include="src\metro\MetroTexture.cpp">
-      <Filter>src\Metro\Objects\Texture</Filter>
-    </ClCompile>
-    <ClCompile Include="src\ui\AboutDlg.cpp">
-      <Filter>src\UI\Dialogs\About</Filter>
-    </ClCompile>
-    <ClCompile Include="src\ui\ChooseFolderDlg.cpp">
-      <Filter>src\UI\Dialogs\ChooseFolder</Filter>
-    </ClCompile>
-    <ClCompile Include="src\ui\ExtractionOptionsDgl.cpp">
-      <Filter>src\UI\Dialogs\ExtractionOptions</Filter>
-    </ClCompile>
-    <ClCompile Include="src\ui\MainForm.cpp">
-      <Filter>src\UI\Forms\Main</Filter>
-    </ClCompile>
-    <ClCompile Include="src\ui\RenderPanel.cpp">
-      <Filter>src\UI\Forms\Main\Render</Filter>
-    </ClCompile>
-    <ClCompile Include="src\ui\ImagePanel.cpp">
-      <Filter>src\UI\Forms\Main\ImagePanel</Filter>
-    </ClCompile>
-    <ClCompile Include="src\ui\SoundPanel.cpp">
-      <Filter>src\UI\Forms\Main\SoundPanel</Filter>
+    <ClCompile Include="src\dds_utils.cpp">
+      <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="src\hashing.cpp">
-      <Filter>src\Utils\Hashing</Filter>
+      <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="src\dds_utils.cpp">
-      <Filter>src\Utils\DDS</Filter>
+    <ClCompile Include="src\metro\MetroLevel.cpp">
+      <Filter>src\metro</Filter>
+    </ClCompile>
+    <ClCompile Include="src\metro\MetroModel.cpp">
+      <Filter>src\metro</Filter>
+    </ClCompile>
+    <ClCompile Include="src\metro\MetroReflection.cpp">
+      <Filter>src\metro</Filter>
+    </ClCompile>
+    <ClCompile Include="src\metro\MetroSkeleton.cpp">
+      <Filter>src\metro</Filter>
+    </ClCompile>
+    <ClCompile Include="src\metro\MetroTexturesDatabase.cpp">
+      <Filter>src\metro</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ui\ExtractionOptionsDgl.cpp">
+      <Filter>src\ui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\metro\MetroSound.cpp">
+      <Filter>src\metro</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ui\ChooseFolderDlg.cpp">
+      <Filter>src\ui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ui\AboutDlg.cpp">
+      <Filter>src\ui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\metro\MetroConfigDatabase.cpp">
+      <Filter>src\metro</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ui\SoundPanel.cpp">
+      <Filter>src\ui</Filter>
     </ClCompile>
     <ClCompile Include="src\camera.cpp">
-      <Filter>src\UI\Forms\Main\Render\Camera</Filter>
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\metro\MetroMotion.cpp">
+      <Filter>src\metro</Filter>
     </ClCompile>
     <ClCompile Include="src\log.cpp">
-      <Filter>src\_Common\Log</Filter>
+      <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="src\metro\MetroDatabases.h">
-      <Filter>src\Metro\Databases</Filter>
+      <Filter>src\metro</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\ui\RenderPanel.h">
+      <Filter>src\ui</Filter>
+    </ClInclude>
     <ClInclude Include="src\ui\ImagePanel.h">
-      <Filter>src\UI</Filter>
+      <Filter>src\ui</Filter>
     </ClInclude>
     <ClInclude Include="src\ui\MainForm.h">
-      <Filter>src\UI</Filter>
+      <Filter>src\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="src\mycommon.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\mymath.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\metro\VFXReader.h">
+      <Filter>src\metro</Filter>
+    </ClInclude>
+    <ClInclude Include="src\metro\MetroTexture.h">
+      <Filter>src\metro</Filter>
     </ClInclude>
     <ClInclude Include="libs\lz4\lz4.h">
       <Filter>libs\lz4</Filter>
@@ -96,74 +111,59 @@
     <ClInclude Include="libs\xxhash\xxhash.h">
       <Filter>libs\xxhash</Filter>
     </ClInclude>
-    <ClInclude Include="src\ui\ExtractionOptionsDgl.h">
-      <Filter>src\UI</Filter>
-    </ClInclude>
-    <ClInclude Include="src\ui\AboutDlg.h">
-      <Filter>src\UI</Filter>
-    </ClInclude>
-    <ClInclude Include="src\ui\SoundPanel.h">
-      <Filter>src\UI</Filter>
-    </ClInclude>
-    <ClInclude Include="src\metro\VFXReader.h">
-      <Filter>src\Metro\VFXArchives</Filter>
-    </ClInclude>
-    <ClInclude Include="src\metro\MetroConfigDatabase.h">
-      <Filter>src\Metro\Databases\ConfigsDatabase</Filter>
-    </ClInclude>
-    <ClInclude Include="src\metro\MetroTexturesDatabase.h">
-      <Filter>src\Metro\Databases\TexturesDatabase</Filter>
-    </ClInclude>
-    <ClInclude Include="src\metro\MetroTypes.h">
-      <Filter>src\Metro\Types</Filter>
-    </ClInclude>
-    <ClInclude Include="src\metro\MetroReflection.h">
-      <Filter>src\Metro\Types</Filter>
-    </ClInclude>
-    <ClInclude Include="src\metro\MetroLevel.h">
-      <Filter>src\Metro\Objects\Level</Filter>
-    </ClInclude>
-    <ClInclude Include="src\metro\MetroModel.h">
-      <Filter>src\Metro\Objects\Model</Filter>
-    </ClInclude>
-    <ClInclude Include="src\metro\MetroMotion.h">
-      <Filter>src\Metro\Objects\Motion</Filter>
-    </ClInclude>
-    <ClInclude Include="src\metro\MetroSkeleton.h">
-      <Filter>src\Metro\Objects\Skeleton</Filter>
-    </ClInclude>
-    <ClInclude Include="src\metro\MetroSound.h">
-      <Filter>src\Metro\Objects\Sound</Filter>
-    </ClInclude>
-    <ClInclude Include="src\metro\MetroTexture.h">
-      <Filter>src\Metro\Objects\Texture</Filter>
-    </ClInclude>
-    <ClInclude Include="src\ui\ChooseFolderDlg.h">
-      <Filter>src\UI\Dialogs\ChooseFolder</Filter>
-    </ClInclude>
-    <ClInclude Include="src\ui\RenderPanel.h">
-      <Filter>src\UI\Forms\Main\Render</Filter>
-    </ClInclude>
-    <ClInclude Include="src\mycommon.h">
-      <Filter>src\_Common</Filter>
-    </ClInclude>
-    <ClInclude Include="src\mymath.h">
-      <Filter>src\_Common</Filter>
+    <ClInclude Include="src\dds_utils.h">
+      <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="src\hashing.h">
-      <Filter>src\Utils\Hashing</Filter>
+      <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="src\dds_utils.h">
-      <Filter>src\Utils\DDS</Filter>
+    <ClInclude Include="src\metro\MetroLevel.h">
+      <Filter>src\metro</Filter>
+    </ClInclude>
+    <ClInclude Include="src\metro\MetroModel.h">
+      <Filter>src\metro</Filter>
+    </ClInclude>
+    <ClInclude Include="src\metro\MetroReflection.h">
+      <Filter>src\metro</Filter>
+    </ClInclude>
+    <ClInclude Include="src\metro\MetroSkeleton.h">
+      <Filter>src\metro</Filter>
+    </ClInclude>
+    <ClInclude Include="src\metro\MetroTexturesDatabase.h">
+      <Filter>src\metro</Filter>
+    </ClInclude>
+    <ClInclude Include="src\metro\MetroTypes.h">
+      <Filter>src\metro</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ui\ExtractionOptionsDgl.h">
+      <Filter>src\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="src\metro\MetroSound.h">
+      <Filter>src\metro</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ui\ChooseFolderDlg.h">
+      <Filter>src\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ui\AboutDlg.h">
+      <Filter>src\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="src\metro\MetroConfigDatabase.h">
+      <Filter>src\metro</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ui\SoundPanel.h">
+      <Filter>src\ui</Filter>
     </ClInclude>
     <ClInclude Include="src\camera.h">
-      <Filter>src\UI\Forms\Main\Render\Camera</Filter>
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\metro\MetroMotion.h">
+      <Filter>src\metro</Filter>
     </ClInclude>
     <ClInclude Include="src\log.h">
-      <Filter>src\_Common\Log</Filter>
+      <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="src\metro\MetroConfigNames.h">
-      <Filter>src\Metro\Databases\ConfigsDatabase</Filter>
+      <Filter>src\metro</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -177,6 +177,12 @@
     <Filter Include="src">
       <UniqueIdentifier>{0ba16106-9ed6-4b67-b66e-8ae05a20a83f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="src\ui">
+      <UniqueIdentifier>{3f446de9-de47-422f-a9af-7cc7135c1c1b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\metro">
+      <UniqueIdentifier>{5d82e6c3-1063-43cb-af8c-633d9c7c1d81}</UniqueIdentifier>
+    </Filter>
     <Filter Include="libs">
       <UniqueIdentifier>{d2756712-884c-495b-abd5-5e17d8a702c7}</UniqueIdentifier>
     </Filter>
@@ -189,95 +195,8 @@
     <Filter Include="libs\xxhash">
       <UniqueIdentifier>{2125f47f-594e-4d31-9958-b9fa9549696c}</UniqueIdentifier>
     </Filter>
-    <Filter Include="src\Metro">
-      <UniqueIdentifier>{5d82e6c3-1063-43cb-af8c-633d9c7c1d81}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="src\Metro\VFXArchives">
-      <UniqueIdentifier>{76f1a7ca-281b-4e06-83c0-16076aae3bff}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="src\Metro\Databases">
-      <UniqueIdentifier>{ed850a4b-79dd-4e36-ac91-31d40bdc7c99}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="src\Metro\Databases\TexturesDatabase">
-      <UniqueIdentifier>{b6163397-aeaf-4c3a-9bd2-12096b613746}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="src\Metro\Databases\ConfigsDatabase">
-      <UniqueIdentifier>{e8e14606-a573-4753-92d9-0cf5bad3446a}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="src\Metro\Types">
-      <UniqueIdentifier>{dcebd6a2-bc8c-48f3-b0bf-d5e467b92045}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="src\Metro\Objects">
-      <UniqueIdentifier>{df938109-2d0c-4d87-ab67-2f282bf3f456}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="src\Metro\Objects\Level">
-      <UniqueIdentifier>{2841afd8-3d6b-4a97-b31c-d09611e025f7}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="src\Metro\Objects\Model">
-      <UniqueIdentifier>{c631a312-2cb5-4506-9175-31280a41e974}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="src\Metro\Objects\Motion">
-      <UniqueIdentifier>{7c0c230d-d9b1-4186-aba9-b00e8fa148cb}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="src\Metro\Objects\Skeleton">
-      <UniqueIdentifier>{294afa1d-7cd6-4237-ae69-d21047ae3b1e}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="src\Metro\Objects\Sound">
-      <UniqueIdentifier>{43e7ec8a-a19d-41e8-80b3-5e22ae1887a4}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="src\Metro\Objects\Texture">
-      <UniqueIdentifier>{0476446b-bb8a-4dae-8867-447bcd4c1d72}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="src\Shaders">
+    <Filter Include="src\shaders">
       <UniqueIdentifier>{cee2b1cb-62a2-4870-9f25-ebf41f6fd84b}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="src\UI">
-      <UniqueIdentifier>{3f446de9-de47-422f-a9af-7cc7135c1c1b}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="src\UI\Dialogs">
-      <UniqueIdentifier>{dfc75240-56c6-466a-8837-f79ea564840f}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="src\UI\Dialogs\About">
-      <UniqueIdentifier>{d592ab6f-0dd2-43e3-93bd-788873931029}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="src\UI\Dialogs\ChooseFolder">
-      <UniqueIdentifier>{80a9e1ad-50da-46eb-8bcd-254b808112ba}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="src\UI\Dialogs\ExtractionOptions">
-      <UniqueIdentifier>{e276a60a-9741-45f5-837b-2b9d0067471f}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="src\UI\Forms">
-      <UniqueIdentifier>{2989f86f-9392-4185-89d0-a18cd73dd313}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="src\UI\Forms\Main">
-      <UniqueIdentifier>{94afe2e6-5f4c-4bfe-8e74-5db51bfcfd59}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="src\UI\Forms\Main\Render">
-      <UniqueIdentifier>{51ef92c7-f4d6-46a8-a308-62e682bb61cb}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="src\UI\Forms\Main\ImagePanel">
-      <UniqueIdentifier>{9ea230d4-94ab-48a9-8ff6-80c97401a39a}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="src\UI\Forms\Main\SoundPanel">
-      <UniqueIdentifier>{9772edcd-af7c-4176-9e26-a8ced946c248}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="src\_Common">
-      <UniqueIdentifier>{799d5b21-3879-4a18-915e-aa85eeaa3d9a}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="src\Utils">
-      <UniqueIdentifier>{8702534d-029d-4b32-8f9e-c2db53987f58}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="src\Utils\Hashing">
-      <UniqueIdentifier>{d0889574-21c5-40b1-b247-d8d6bdc508e0}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="src\Utils\DDS">
-      <UniqueIdentifier>{7de0ce51-a6c6-41c2-8d55-b39f9be29e56}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="src\UI\Forms\Main\Render\Camera">
-      <UniqueIdentifier>{37af840e-ffe6-44bd-8047-9ff2fc522308}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="src\_Common\Log">
-      <UniqueIdentifier>{fb39fc5d-3aa7-4442-9eab-ad90e073e0b9}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -288,16 +207,16 @@
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="src\shaders\ModelViewerVS.hlsl">
-      <Filter>src\Shaders</Filter>
+      <Filter>src\shaders</Filter>
     </FxCompile>
     <FxCompile Include="src\shaders\ModelViewerPS.hlsl">
-      <Filter>src\Shaders</Filter>
+      <Filter>src\shaders</Filter>
     </FxCompile>
     <FxCompile Include="src\shaders\CubemapViewerPS.hlsl">
-      <Filter>src\Shaders</Filter>
+      <Filter>src\shaders</Filter>
     </FxCompile>
     <FxCompile Include="src\shaders\CubemapViewerVS.hlsl">
-      <Filter>src\Shaders</Filter>
+      <Filter>src\shaders</Filter>
     </FxCompile>
   </ItemGroup>
 </Project>

@@ -61,6 +61,7 @@
       <PreprocessorDefinitions>_DEBUG;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(SolutionDir)src;$(SolutionDir)libs\glm;$(SolutionDir)libs\stb;$(SolutionDir)libs\lz4;$(SolutionDir)libs\bc7enc16;$(SolutionDir)libs\xxhash;$(SolutionDir)libs\fbx\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <DisableSpecificWarnings>4793</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <AdditionalDependencies>Ole32.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -83,6 +84,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <WholeProgramOptimization>true</WholeProgramOptimization>
+      <DisableSpecificWarnings>4793</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <AdditionalDependencies>Ole32.lib;%(AdditionalDependencies)</AdditionalDependencies>

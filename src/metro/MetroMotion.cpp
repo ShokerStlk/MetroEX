@@ -230,7 +230,7 @@ enum class AttribCurveType : uint8_t {
     Uncompressed    = 1,    // raw float values
     OneValue        = 2,    // constant value, no curve
     Unknown_3       = 3,
-    CompressedPos   = 4,    // quantized position, scale + offset + s16 values
+    CompressedPos   = 4,    // quantized position, scale + offset + u16 values
     CompressedQuat  = 5,    // quantized quaternion (xyz, we restore w), s16_snorm values
     Unknown_6       = 6,
     Empty           = 7     // no curve, why not just filter it out with mask ???

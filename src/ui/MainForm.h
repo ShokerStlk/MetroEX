@@ -101,7 +101,6 @@ namespace MetroEX {
 
         TreeNode^                   mOriginalRootNode;
 
-    public:
         MetroTexturesDatabase*      mTexturesDatabase;
         MetroConfigsDatabase*       mConfigsDatabase;
 

@@ -211,7 +211,12 @@ namespace MetroEX {
 
             mVFXReader = new VFXReader();
             if (mVFXReader->LoadFromFile(StringToPath(ofd.FileName))) {
-                LoadDatabasesFromFile(mVFXReader, this);
+                MetroTexturesDatabase* texDb;
+                MetroConfigsDatabase* cfgDb;
+                LoadDatabasesFromFile(mVFXReader, texDb, cfgDb);
+                mTexturesDatabase = texDb;
+                mConfigsDatabase = cfgDb;
+
                 this->UpdateFilesList();
             }
 

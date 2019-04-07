@@ -237,21 +237,31 @@ namespace MetroEX {
     void MainForm::treeView1_AfterSelect(System::Object^, System::Windows::Forms::TreeViewEventArgs^ e) {
         FileTagData^ fileData = safe_cast<FileTagData^>(e->Node->Tag);
         const size_t fileIdx = fileData->fileIdx & kFileIdxMask;
+        const bool isSubFile = fileData->subFileIdx != kEmptyIdx;
 
         if (mVFXReader) {
-            const MetroFile& mf = mVFXReader->GetFile(fileIdx);
-            if (mf.IsFile()) {
-                this->statusLabel1->Text = mf.pakIdx.ToString();
-                this->statusLabel2->Text = mf.offset.ToString();
-                this->statusLabel3->Text = mf.sizeCompressed.ToString();
-                this->statusLabel4->Text = mf.sizeUncompressed.ToString();
+            if (isSubFile) {
+                const MetroConfigsDatabase::ConfigInfo& ci = mConfigsDatabase->GetFileByIdx(fileData->subFileIdx);
 
-                this->DetectFileAndShow(fileIdx);
+                this->statusLabel1->Text = L"config.bin";
+                this->statusLabel2->Text = fileData->subFileIdx.ToString();
+                this->statusLabel3->Text = ci.offset.ToString();
+                this->statusLabel4->Text = ci.length.ToString();
             } else {
-                this->statusLabel1->Text = String::Empty;
-                this->statusLabel2->Text = String::Empty;
-                this->statusLabel3->Text = String::Empty;
-                this->statusLabel4->Text = String::Empty;
+                const MetroFile& mf = mVFXReader->GetFile(fileIdx);
+                if (mf.IsFile()) {
+                    this->statusLabel1->Text = mf.pakIdx.ToString();
+                    this->statusLabel2->Text = mf.offset.ToString();
+                    this->statusLabel3->Text = mf.sizeCompressed.ToString();
+                    this->statusLabel4->Text = mf.sizeUncompressed.ToString();
+
+                    this->DetectFileAndShow(fileIdx);
+                } else {
+                    this->statusLabel1->Text = String::Empty;
+                    this->statusLabel2->Text = String::Empty;
+                    this->statusLabel3->Text = String::Empty;
+                    this->statusLabel4->Text = String::Empty;
+                }
             }
         }
     }
@@ -324,8 +334,7 @@ namespace MetroEX {
 
                     case FileType::Bin: {
                         if (isSubFile) {
-                            size_t chunkIdx = fileData->subFileIdx;
-                            const MetroConfigsDatabase::ConfigInfo& ci = mConfigsDatabase->GetFileByIdx(chunkIdx);
+                            const MetroConfigsDatabase::ConfigInfo& ci = mConfigsDatabase->GetFileByIdx(fileData->subFileIdx);
 
                             mExtractionCtx->customOffset = ci.offset;
                             mExtractionCtx->customLength = ci.length;

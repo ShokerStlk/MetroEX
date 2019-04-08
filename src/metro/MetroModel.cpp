@@ -915,6 +915,8 @@ void MetroModel::LoadMotions() {
         motionFiles.insert(motionFiles.end(), v.begin(), v.end());
     }
 
+    const size_t numBones = mSkeleton->GetNumBones();
+
     mMotions.reserve(motionFiles.size());
     for (const size_t idx : motionFiles) {
         MemStream stream = mVFXReader->ExtractFile(idx);
@@ -923,7 +925,7 @@ void MetroModel::LoadMotions() {
             CharString motionName = fs::path(mf.name).stem().u8string();
 
             MetroMotion* motion = new MetroMotion(motionName);
-            if (motion->LoadFromData(stream)) {
+            if (motion->LoadFromData(stream) && motion->GetNumBones() == numBones) {
                 mMotions.push_back(motion);
             } else {
                 MySafeDelete(motion);

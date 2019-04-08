@@ -278,6 +278,7 @@ namespace MetroEX {
     void RenderPanel::SwitchMotion(const size_t idx) {
         if (mModel && mModel->IsAnimated()) {
             mCurrentMotion = mModel->GetMotion(idx);
+            mAnimation->time = 0.0f;
         }
     }
 

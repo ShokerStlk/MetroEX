@@ -198,13 +198,15 @@ size_t VFXReader::FindFile(const CharString& fileName, const MetroFile* inFolder
         lastSlashPos = 0;
     }
 
-    CharString name = fileName.substr(lastSlashPos);
+    if (folder) {
+        CharString name = fileName.substr(lastSlashPos);
 
-    for (const size_t idx : *folder) {
-        const MetroFile& mf = mFiles[idx];
-        if (name == mf.name) {
-            result = idx;
-            break;
+        for (const size_t idx : *folder) {
+            const MetroFile& mf = mFiles[idx];
+            if (name == mf.name) {
+                result = idx;
+                break;
+            }
         }
     }
 

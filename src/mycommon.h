@@ -311,3 +311,5 @@ struct Bitset256 {
         (ptr) = nullptr;    \
     }
 #endif
+
+#include "log.h"

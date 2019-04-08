@@ -1,8 +1,11 @@
 #pragma once
 
-#ifndef CS2MStr
-// Convert CharString to String^
-#define CS2MStr(value) marshal_as<String^>(value)
-#endif
+enum class LogLevel {
+    Info,
+    Warning,
+    Error
+};
 
-void Log(System::String^ message, ... array<System::Object^>^ args);
+void LogOpen(fs::path& folder);
+void LogClose();
+void LogPrint(LogLevel level, const CharString& message);

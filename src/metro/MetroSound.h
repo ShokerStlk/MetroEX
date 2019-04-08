@@ -6,7 +6,7 @@ public:
     MetroSound();
     ~MetroSound();
 
-    bool    LoadFromData(const void* data, const size_t dataLen);
+    bool    LoadFromData(MemStream& stream);
     bool    GetWAVE(BytesArray& waveData);
 
     bool    SaveAsOGG(const fs::path& outPath);

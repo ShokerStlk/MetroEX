@@ -14,7 +14,7 @@ struct ParentMapped {   // 48 bytes
 };
 
 struct MetroBone {      // 38 bytes
-    static const size_t InvalidIdx = ~0;
+    static const size_t InvalidIdx = kInvalidValue;
 
     RefString   name;
     RefString   parent;
@@ -31,7 +31,7 @@ public:
     MetroSkeleton();
     ~MetroSkeleton();
 
-    bool                    LoadFromData(const uint8_t* data, const size_t dataLength);
+    bool                    LoadFromData(MemStream& stream);
 
     size_t                  GetNumBones() const;
     const quat&             GetBoneRotation(const size_t idx) const;

@@ -80,8 +80,8 @@ public:
     MetroTexturesDatabase();
     ~MetroTexturesDatabase();
 
-    bool                    LoadFromData(const void* data, const size_t length);
-    bool                    LoadAliasesFromData(const void* data, const size_t length);
+    bool                    LoadFromData(MemStream& stream);
+    bool                    LoadAliasesFromData(MemStream& stream);
 
     const MetroTextureInfo* GetInfoByName(const HashString& name) const;
     const HashString&       GetAlias(const HashString& name) const;

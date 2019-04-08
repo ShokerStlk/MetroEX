@@ -69,13 +69,12 @@ MetroModel::~MetroModel() {
     MySafeDelete(mSkeleton);
 }
 
-bool MetroModel::LoadFromData(const uint8_t* data, const size_t length, VFXReader* vfxReader, const size_t fileIdx) {
+bool MetroModel::LoadFromData(MemStream& stream, VFXReader* vfxReader, const size_t fileIdx) {
     bool result = false;
 
     mVFXReader = vfxReader;
     mThisFileIdx = fileIdx;
 
-    MemStream stream(data, length);
     this->ReadSubChunks(stream);
 
     this->LoadMotions();
@@ -850,10 +849,10 @@ void MetroModel::ReadSubChunks(MemStream& stream) {
                 CharString skelFilePath = "content\\meshes\\" + skeletonRef + ".skeleton.bin";
                 const size_t fileIdx = mVFXReader->FindFile(skelFilePath);
                 if (MetroFile::InvalidFileIdx != fileIdx) {
-                    BytesArray content;
-                    if (mVFXReader->ExtractFile(fileIdx, content)) {
+                    MemStream stream = mVFXReader->ExtractFile(fileIdx);
+                    if (stream) {
                         mSkeleton = new MetroSkeleton();
-                        if (!mSkeleton->LoadFromData(content.data(), content.size())) {
+                        if (!mSkeleton->LoadFromData(stream)) {
                             MySafeDelete(mSkeleton);
                         }
                     }
@@ -862,7 +861,7 @@ void MetroModel::ReadSubChunks(MemStream& stream) {
 
             case MC_SkeletonInline: {
                 mSkeleton = new MetroSkeleton();
-                if (!mSkeleton->LoadFromData(stream.GetDataAtCursor(), chunkSize)) {
+                if (!mSkeleton->LoadFromData(stream.Substream(chunkSize))) {
                     MySafeDelete(mSkeleton);
                 }
             } break;
@@ -886,9 +885,8 @@ void MetroModel::LoadLinkedMeshes(const StringArray& links) {
             fileIdx = mVFXReader->FindFile(meshFilePath);
         }
         if (MetroFile::InvalidFileIdx != fileIdx) {
-            BytesArray meshContent;
-            if (mVFXReader->ExtractFile(fileIdx, meshContent)) {
-                MemStream stream(meshContent.data(), meshContent.size());
+            MemStream stream = mVFXReader->ExtractFile(fileIdx);
+            if (stream) {
                 this->ReadSubChunks(stream);
             }
 
@@ -919,13 +917,13 @@ void MetroModel::LoadMotions() {
 
     mMotions.reserve(motionFiles.size());
     for (const size_t idx : motionFiles) {
-        BytesArray content;
-        if (mVFXReader->ExtractFile(idx, content)) {
+        MemStream stream = mVFXReader->ExtractFile(idx);
+        if (stream) {
             const MetroFile& mf = mVFXReader->GetFile(idx);
             CharString motionName = fs::path(mf.name).stem().u8string();
 
             MetroMotion* motion = new MetroMotion(motionName);
-            if (motion->LoadFromData(content.data(), content.size())) {
+            if (motion->LoadFromData(stream)) {
                 mMotions.push_back(motion);
             } else {
                 MySafeDelete(motion);

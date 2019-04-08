@@ -24,9 +24,6 @@ enum class eNodeEventType : size_t {
     Close
 };
 
-static const size_t kEmptyIdx               = ~0;
-static const size_t kEmptyCustomValue       = ~0;
-
 static const int    kImageIdxFolderClosed   = 0;
 static const int    kImageIdxFolderOpen     = 1;
 static const int    kImageIdxFile           = 2;
@@ -246,7 +243,7 @@ namespace MetroEX {
     void MainForm::treeView1_AfterSelect(System::Object^, System::Windows::Forms::TreeViewEventArgs^ e) {
         FileTagData^ fileData = safe_cast<FileTagData^>(e->Node->Tag);
         const size_t fileIdx = fileData->fileIdx & kFileIdxMask;
-        const bool isSubFile = fileData->subFileIdx != kEmptyIdx;
+        const bool isSubFile = fileData->subFileIdx != kInvalidValue;
 
         if (mVFXReader) {
             if (isSubFile) {
@@ -313,7 +310,7 @@ namespace MetroEX {
     void MainForm::treeView1_NodeMouseClick(System::Object^, System::Windows::Forms::TreeNodeMouseClickEventArgs^ e) {
         if (e->Button == System::Windows::Forms::MouseButtons::Right) {
             FileTagData^ fileData = safe_cast<FileTagData^>(e->Node->Tag);
-            const bool isSubFile = fileData->subFileIdx != kEmptyIdx;
+            const bool isSubFile = fileData->subFileIdx != kInvalidValue;
 
             const size_t fileIdx = fileData->fileIdx & kFileIdxMask;
             const MetroFile& mf = mVFXReader->GetFile(fileIdx);
@@ -323,8 +320,8 @@ namespace MetroEX {
             memset(mExtractionCtx, 0, sizeof(FileExtractionCtx));
             mExtractionCtx->fileIdx = fileIdx;
             mExtractionCtx->type = fileType;
-            mExtractionCtx->customOffset = kEmptyCustomValue;
-            mExtractionCtx->customLength = kEmptyCustomValue;
+            mExtractionCtx->customOffset = kInvalidValue;
+            mExtractionCtx->customLength = kInvalidValue;
             mExtractionCtx->customFileName = "";
 
             if (mf.IsFile()) {
@@ -442,8 +439,8 @@ namespace MetroEX {
     }
 
     void MainForm::extractBinRootToolStripMenuItem_Click(System::Object^ sender, System::EventArgs^ e) {
-        mExtractionCtx->customOffset = kEmptyCustomValue;
-        mExtractionCtx->customLength = kEmptyCustomValue;
+        mExtractionCtx->customOffset = kInvalidValue;
+        mExtractionCtx->customLength = kInvalidValue;
         mExtractionCtx->customFileName = "";
 
         this->extractFileToolStripMenuItem_Click(sender, e);
@@ -544,17 +541,17 @@ namespace MetroEX {
 
             mOriginalRootNode = rootNode;
 
-            rootNode->Tag = gcnew FileTagData(FileType::Folder, rootIdx, kEmptyIdx);
+            rootNode->Tag = gcnew FileTagData(FileType::Folder, rootIdx, kInvalidValue);
             UpdateNodeIcon(rootNode);
 
             const MetroFile& rootDir = mVFXReader->GetRootFolder();
-            for (size_t idx = rootDir.firstFile; idx < rootDir.firstFile + rootDir.numFiles; ++idx) {
+            for (const size_t idx : rootDir) {
                 const MetroFile& mf = mVFXReader->GetFile(idx);
 
                 if (mf.IsFile()) {
                     const FileType fileType = DetectFileType(mf);
                     TreeNode^ fileNode = rootNode->Nodes->Add(marshal_as<String^>(mf.name));
-                    fileNode->Tag = gcnew FileTagData(fileType, idx, kEmptyIdx);
+                    fileNode->Tag = gcnew FileTagData(fileType, idx, kInvalidValue);
                     UpdateNodeIcon(fileNode);
                 } else {
                     this->AddFoldersRecursive(mf, idx, rootNode, configBinIdx);
@@ -569,11 +566,11 @@ namespace MetroEX {
         // Add root folder
         TreeNode^ dirLeafNode = rootItem->Nodes->Add(marshal_as<String^>(dir.name));
 
-        dirLeafNode->Tag = gcnew FileTagData(FileType::Folder, folderIdx, kEmptyIdx);
+        dirLeafNode->Tag = gcnew FileTagData(FileType::Folder, folderIdx, kInvalidValue);
         UpdateNodeIcon(dirLeafNode);
 
         // Add files and folders inside
-        for (size_t idx = dir.firstFile; idx < dir.firstFile + dir.numFiles; ++idx) {
+        for (const size_t idx : dir) {
             const MetroFile& mf = mVFXReader->GetFile(idx);
 
             if (mf.IsFile()) {
@@ -585,7 +582,7 @@ namespace MetroEX {
                     //====> any other file
                     const FileType fileType = DetectFileType(mf);
                     TreeNode^ fileNode = dirLeafNode->Nodes->Add(marshal_as<String^>(mf.name));
-                    fileNode->Tag = gcnew FileTagData(fileType, idx, kEmptyIdx);
+                    fileNode->Tag = gcnew FileTagData(fileType, idx, kInvalidValue);
                     UpdateNodeIcon(fileNode);
                 }
             } else {
@@ -597,7 +594,7 @@ namespace MetroEX {
 
     void MainForm::AddBinaryArchive(const MetroFile& mf, const size_t fileIdx, TreeNode^ rootItem) {
         TreeNode^ fileNode = rootItem->Nodes->Add(marshal_as<String^>(mf.name));
-        fileNode->Tag = gcnew FileTagData(FileType::BinArchive, fileIdx, kEmptyIdx);
+        fileNode->Tag = gcnew FileTagData(FileType::BinArchive, fileIdx, kInvalidValue);
         UpdateNodeIcon(fileNode);
 
         for (size_t idx = 0, numFiles = mConfigsDatabase->GetNumFiles(); idx < numFiles; ++idx) {
@@ -661,15 +658,6 @@ namespace MetroEX {
                 this->ShowModel(fileIdx);
             } break;
 
-            case FileType::Motion: {
-                BytesArray content;
-                if (mVFXReader->ExtractFile(fileIdx, content)) {
-                    MetroMotion motion;
-                    if (motion.LoadFromData(content.data(), content.size())) {
-                    }
-                }
-            } break;
-
             case FileType::Sound: {
                 this->ShowSound(fileIdx);
             } break;
@@ -683,10 +671,10 @@ namespace MetroEX {
     void MainForm::ShowTexture(const size_t fileIdx) {
         const MetroFile& mf = mVFXReader->GetFile(fileIdx);
 
-        BytesArray content;
-        if (mVFXReader->ExtractFile(fileIdx, content)) {
+        MemStream stream = mVFXReader->ExtractFile(fileIdx);
+        if (stream) {
             MetroTexture texture;
-            if (texture.LoadFromData(content.data(), content.size(), mf.name)) {
+            if (texture.LoadFromData(stream, mf.name)) {
                 if (texture.IsCubemap()) {
                     this->SwitchViewPanel(PanelType::Model);
                     mRenderPanel->SetCubemap(&texture);
@@ -710,10 +698,10 @@ namespace MetroEX {
         this->SwitchInfoPanel(PanelType::Model);
 
         const MetroFile& mf = mVFXReader->GetFile(fileIdx);
-        BytesArray modelData;
-        if (mVFXReader->ExtractFile(fileIdx, modelData)) {
+        MemStream stream = mVFXReader->ExtractFile(fileIdx);
+        if (stream) {
             MetroModel* mdl = new MetroModel();
-            if (mdl->LoadFromData(modelData.data(), modelData.size(), mVFXReader, fileIdx)) {
+            if (mdl->LoadFromData(stream, mVFXReader, fileIdx)) {
                 mRenderPanel->SetModel(mdl, mVFXReader, mTexturesDatabase);
 
                 this->lstMdlPropMotions->Items->Clear();
@@ -755,10 +743,10 @@ namespace MetroEX {
         mSoundPanel->Show();
 
         const MetroFile& mf = mVFXReader->GetFile(fileIdx);
-        BytesArray modelData;
-        if (mVFXReader->ExtractFile(fileIdx, modelData)) {
+        MemStream stream = mVFXReader->ExtractFile(fileIdx);
+        if (stream) {
             MetroSound* snd = new MetroSound();
-            if (snd->LoadFromData(modelData.data(), modelData.size())) {
+            if (snd->LoadFromData(stream)) {
                 mSoundPanel->SetSound(snd);
             } else {
                 MySafeDelete(snd);
@@ -916,31 +904,24 @@ namespace MetroEX {
         }
 
         if (!resultPath.empty()) {
-            BytesArray content;
-            if (mVFXReader->ExtractFile(ctx.fileIdx, content)) {
+            MemStream stream = mVFXReader->ExtractFile(ctx.fileIdx);
+            if (stream) {
                 std::ofstream file(resultPath, std::ofstream::binary);
                 if (file.good()) {
-                    const void* data = content.data();
-                    size_t dataSize = content.size();
+                    const bool hasCustomLength = ctx.customLength != kInvalidValue;
+                    const bool hasCustomOffset = ctx.customOffset != kInvalidValue;
 
-                    bool hasCustomLength = ctx.customLength != kEmptyCustomValue;
-                    bool hasCustomOffset = ctx.customOffset != kEmptyCustomValue;
-
-                    size_t lengthToWrite = hasCustomLength ?
-                        ctx.customLength :
-                        dataSize;
+                    size_t lengthToWrite = hasCustomLength ? ctx.customLength : stream.Remains();
 
                     if (hasCustomOffset) {
-                        MemStream stream(data, dataSize);
                         stream.SetCursor(ctx.customOffset);
-                        data = stream.GetDataAtCursor();
 
                         if (hasCustomLength == false) {
-                            lengthToWrite = dataSize - ctx.customOffset;
+                            lengthToWrite = stream.Length() - ctx.customOffset;
                         }
                     }
 
-                    file.write(rcast<const char*>(data), lengthToWrite);
+                    file.write(rcast<const char*>(stream.GetDataAtCursor()), lengthToWrite);
                     file.flush();
 
                     result = true;
@@ -988,10 +969,10 @@ namespace MetroEX {
         }
 
         if (!resultPath.empty()) {
-            BytesArray content;
-            if (mVFXReader->ExtractFile(ctx.fileIdx, content)) {
+            MemStream stream = mVFXReader->ExtractFile(ctx.fileIdx);
+            if (stream) {
                 MetroTexture texture;
-                if (texture.LoadFromData(content.data(), content.size(), mf.name)) {
+                if (texture.LoadFromData(stream, mf.name)) {
                     if (ctx.txSaveAsDds) {
                         if (ctx.txUseBC3) {
                             result = texture.SaveAsLegacyDDS(resultPath);
@@ -1044,10 +1025,10 @@ namespace MetroEX {
         }
 
         if (!resultPath.empty()) {
-            BytesArray modelData;
-            if (mVFXReader->ExtractFile(ctx.fileIdx, modelData)) {
+            MemStream& stream = mVFXReader->ExtractFile(ctx.fileIdx);
+            if (stream) {
                 MetroModel mdl;
-                if (mdl.LoadFromData(modelData.data(), modelData.size(), mVFXReader, ctx.fileIdx)) {
+                if (mdl.LoadFromData(stream, mVFXReader, ctx.fileIdx)) {
                     if (ctx.mdlSaveAsObj) {
                         mdl.SaveAsOBJ(resultPath, mVFXReader, mTexturesDatabase);
                     } else {
@@ -1114,10 +1095,10 @@ namespace MetroEX {
         }
 
         if (!resultPath.empty()) {
-            BytesArray content;
-            if (mVFXReader->ExtractFile(ctx.fileIdx, content)) {
+            MemStream stream = mVFXReader->ExtractFile(ctx.fileIdx);
+            if (stream) {
                 MetroSound sound;
-                if (sound.LoadFromData(content.data(), content.size())) {
+                if (sound.LoadFromData(stream)) {
                     if (ctx.sndSaveAsOgg) {
                         result = sound.SaveAsOGG(resultPath);
                     } else {
@@ -1139,7 +1120,7 @@ namespace MetroEX {
         fs::create_directories(curPath);
 
         FileExtractionCtx tmpCtx = ctx;
-        for (size_t idx = folder.firstFile; idx < (folder.firstFile + folder.numFiles); ++idx) {
+        for (const size_t idx : folder) {
             const MetroFile& mf = mVFXReader->GetFile(idx);
 
             tmpCtx.fileIdx = idx;

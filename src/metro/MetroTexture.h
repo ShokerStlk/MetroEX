@@ -13,7 +13,7 @@ public:
     MetroTexture();
     ~MetroTexture();
 
-    bool            LoadFromData(const uint8_t* data, const size_t length, const CharString& name);
+    bool            LoadFromData(MemStream& stream, const CharString& name);
     bool            SaveAsDDS(const fs::path& filePath);
     bool            SaveAsLegacyDDS(const fs::path& filePath);
     bool            SaveAsTGA(const fs::path& filePath);

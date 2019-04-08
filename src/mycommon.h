@@ -25,6 +25,8 @@ using CharString = std::string;
 using StringArray = MyArray<CharString>;
 using BytesArray = MyArray<uint8_t>;
 
+static const size_t kInvalidValue = ~0;
+
 
 #define rcast reinterpret_cast
 #define scast static_cast
@@ -104,16 +106,70 @@ inline bool StrEndsWith(const CharString& str, const CharString& ending) {
 
 
 class MemStream {
+    using OwnedPtrType = std::shared_ptr<uint8_t>;
+
 public:
-    MemStream(const void* _data, const size_t _size)
-        : data(rcast<const uint8_t*>(_data))
-        , length(_size)
+    MemStream()
+        : data(nullptr)
+        , length(0)
         , cursor(0) {
     }
-    ~MemStream() {}
+
+    MemStream(const void* _data, const size_t _size, const bool _ownMem = false)
+        : data(rcast<const uint8_t*>(_data))
+        , length(_size)
+        , cursor(0)
+    {
+        //#NOTE_SK: dirty hack to own pointer
+        if (_ownMem) {
+            ownedPtr = OwnedPtrType(const_cast<uint8_t*>(data), free);
+        }
+    }
+    MemStream(const MemStream& other)
+        : data(other.data)
+        , length(other.length)
+        , cursor(other.cursor)
+        , ownedPtr(other.ownedPtr) {
+    }
+    MemStream(MemStream&& other)
+        : data(other.data)
+        , length(other.length)
+        , cursor(other.cursor)
+        , ownedPtr(std::move(other.ownedPtr)) {
+    }
+    ~MemStream() {
+    }
+
+    inline MemStream& operator =(const MemStream& other) {
+        this->data = other.data;
+        this->length = other.length;
+        this->cursor = other.cursor;
+        this->ownedPtr = other.ownedPtr;
+        return *this;
+    }
+
+    inline MemStream& operator =(MemStream&& other) {
+        this->data = other.data;
+        this->length = other.length;
+        this->cursor = other.cursor;
+        this->ownedPtr = std::move(other.ownedPtr);
+        return *this;
+    }
+
+    inline operator bool() const {
+        return this->Good();
+    }
+
+    inline bool Good() const {
+        return (this->data != nullptr && this->length > 0);
+    }
 
     inline bool Ended() const {
         return this->cursor == this->length;
+    }
+
+    inline size_t Length() const {
+        return this->length;
     }
 
     inline size_t Remains() const {
@@ -138,14 +194,10 @@ public:
     template <typename T>
     T ReadTyped() {
         T result = T(0);
-#if 0
-        this->ReadToBuffer(&result, sizeof(T));
-#else
         if (this->cursor + sizeof(T) <= this->length) {
             result = *rcast<const T*>(this->data + this->cursor);
             this->cursor += sizeof(T);
         }
-#endif
         return result;
     }
 
@@ -156,11 +208,7 @@ public:
 
     CharString ReadStringZ() {
         CharString result;
-#if 0
-        for (char ch = this->ReadTyped<char>(); ch != 0; ch = this->ReadTyped<char>()) {
-            result.push_back(ch);
-        }
-#else
+
         size_t i = this->cursor;
         const char* ptr = rcast<const char*>(this->data);
         for (; i < this->length; ++i) {
@@ -171,7 +219,7 @@ public:
 
         result.assign(ptr + this->cursor, i - this->cursor);
         this->cursor = i + 1;
-#endif
+
         return result;
     }
 
@@ -196,6 +244,7 @@ private:
     const uint8_t*  data;
     size_t          length;
     size_t          cursor;
+    OwnedPtrType    ownedPtr;
 };
 
 

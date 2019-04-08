@@ -13,9 +13,9 @@ MetroSound::~MetroSound() {
 
 }
 
-bool MetroSound::LoadFromData(const void* data, const size_t dataLen) {
-    mData.resize(dataLen);
-    memcpy(mData.data(), data, dataLen);
+bool MetroSound::LoadFromData(MemStream& stream) {
+    mData.resize(stream.Remains());
+    stream.ReadToBuffer(mData.data(), mData.size());
 
     return true;
 }

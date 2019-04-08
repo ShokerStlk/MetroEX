@@ -5,36 +5,37 @@
 
 #include "ui\MainForm.h"
 
-static void LoadDatabasesFromFile(VFXReader* VFXReader, MetroTexturesDatabase*& texDb, MetroConfigsDatabase*& cfgDb) {
+static void LoadDatabasesFromFile(VFXReader* vfxReader, MetroTexturesDatabase*& texDb, MetroConfigsDatabase*& cfgDb) {
     size_t fileIdx = 0;
 
     texDb = nullptr;
     cfgDb = nullptr;
 
     // Load textures_handles_storage.bin
-    fileIdx = VFXReader->FindFile("content\\textures_handles_storage.bin");
+    fileIdx = vfxReader->FindFile("content\\textures_handles_storage.bin");
     if (MetroFile::InvalidFileIdx != fileIdx) {
-        BytesArray content;
-        if (VFXReader->ExtractFile(fileIdx, content)) {
+        MemStream stream = vfxReader->ExtractFile(fileIdx);
+        if (stream) {
             texDb = new MetroTexturesDatabase();
-            texDb->LoadFromData(content.data(), content.size());
+            texDb->LoadFromData(stream);
 
-            fileIdx = VFXReader->FindFile("content\\scripts\\texture_aliases.bin");
+            fileIdx = vfxReader->FindFile("content\\scripts\\texture_aliases.bin");
             if (MetroFile::InvalidFileIdx != fileIdx) {
-                if (VFXReader->ExtractFile(fileIdx, content)) {
-                    texDb->LoadAliasesFromData(content.data(), content.size());
+                stream = vfxReader->ExtractFile(fileIdx);
+                if (stream) {
+                    texDb->LoadAliasesFromData(stream);
                 }
             }
         }
     }
 
     // Load config.bin
-    fileIdx = VFXReader->FindFile("content\\config.bin");
+    fileIdx = vfxReader->FindFile("content\\config.bin");
     if (MetroFile::InvalidFileIdx != fileIdx) {
-        BytesArray content;
-        if (VFXReader->ExtractFile(fileIdx, content)) {
+        MemStream stream = vfxReader->ExtractFile(fileIdx);
+        if (stream) {
             cfgDb = new MetroConfigsDatabase();
-            cfgDb->LoadFromData(content.data(), content.size());
+            cfgDb->LoadFromData(stream);
         }
     }
 }

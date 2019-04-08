@@ -40,10 +40,8 @@ MetroMotion::~MetroMotion() {
 
 }
 
-bool MetroMotion::LoadFromData(const void* data, const size_t dataLength) {
+bool MetroMotion::LoadFromData(MemStream& stream) {
     bool result = false;
-
-    MemStream stream(data, dataLength);
 
     while (!stream.Ended()) {
         const size_t chunkId = stream.ReadTyped<uint32_t>();

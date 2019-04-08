@@ -14,7 +14,7 @@ public:
     ~VFXReader();
 
     bool                LoadFromFile(const fs::path& filePath);
-    bool                ExtractFile(const size_t fileIdx, BytesArray& content);
+    MemStream           ExtractFile(const size_t fileIdx, const size_t subOffset = kInvalidValue, const size_t subLength = kInvalidValue);
 
     const CharString    GetSelfName() const;
     MyArray<size_t>     GetAllFolders() const;
@@ -30,7 +30,7 @@ public:
     MyArray<size_t>     FindFilesInFolder(const CharString& folder, const CharString& extension, const bool withSubfolders = true);
 
 private:
-    size_t              Decompress(const BytesArray& compressedData, BytesArray& uncompressedData);
+    size_t              Decompress(const void* compressedData, const size_t compressedSize, void* uncompressedData, const size_t uncompressedSize);
 
     CharString          mContentVersion;
     CharString          mFileName;

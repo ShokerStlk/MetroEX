@@ -104,8 +104,8 @@ bool VFXReader::LoadFromFile(const fs::path& filePath) {
     return result;
 }
 
-bool VFXReader::ExtractFile(const size_t fileIdx, BytesArray& content) {
-    bool result = false;
+MemStream VFXReader::ExtractFile(const size_t fileIdx, const size_t subOffset, const size_t subLength) {
+    MemStream result;
 
     const MetroFile& mf = mFiles[fileIdx];
     const Pak& pak = mPaks[mf.pakIdx];
@@ -115,28 +115,26 @@ bool VFXReader::ExtractFile(const size_t fileIdx, BytesArray& content) {
     if (file.good()) {
         file.seekg(mf.offset);
 
-        BytesArray fileContent(mf.sizeCompressed);
-        file.read(rcast<char*>(fileContent.data()), mf.sizeCompressed);
+        const size_t streamOffset = (subOffset == kInvalidValue) ? 0 : std::min<size_t>(subOffset, mf.sizeUncompressed);
+        const size_t streamLength = (subLength == kInvalidValue) ? (mf.sizeUncompressed - streamOffset) : (mf.sizeUncompressed - std::min<size_t>(subOffset, mf.sizeUncompressed));
 
-        BytesArray uncompressedData;
+        uint8_t* fileContent = rcast<uint8_t*>(malloc(mf.sizeCompressed));
+        file.read(rcast<char*>(fileContent), mf.sizeCompressed);
 
         if (mf.sizeCompressed == mf.sizeUncompressed) {
-            uncompressedData.swap(fileContent);
-            result = true;
+            result = MemStream(fileContent, mf.sizeUncompressed, true);
         } else {
-            uncompressedData.resize(mf.sizeUncompressed);
-            const size_t decompressResult = this->Decompress(fileContent, uncompressedData);
+            uint8_t* uncompressedContent = rcast<uint8_t*>(malloc(mf.sizeUncompressed));
+            const size_t decompressResult = this->Decompress(fileContent, mf.sizeCompressed, uncompressedContent, mf.sizeUncompressed);
             if (decompressResult == mf.sizeUncompressed) {
-                result = true;
+                result = MemStream(uncompressedContent, mf.sizeUncompressed, true);
             }
-        }
 
-        if (result) {
-            content.swap(uncompressedData);
+            free(fileContent);
         }
     }
 
-    return result;
+    return std::move(result);
 }
 
 const CharString VFXReader::GetSelfName() const {
@@ -154,7 +152,7 @@ const MetroFile* VFXReader::GetFolder(const CharString& folderPath, const MetroF
         size_t folderIdx = MetroFile::InvalidFileIdx;
 
         CharString name = folderPath.substr(lastSlashPos, slashPos - lastSlashPos);
-        for (size_t idx = folder->firstFile; idx < (folder->firstFile + folder->numFiles); ++idx) {
+        for (const size_t idx : *folder) {
             const MetroFile& mf = mFiles[idx];
             if (name == mf.name) {
                 folderIdx = idx;
@@ -189,7 +187,7 @@ size_t VFXReader::FindFile(const CharString& fileName, const MetroFile* inFolder
 
     CharString name = fileName.substr(lastSlashPos);
 
-    for (size_t idx = folder->firstFile; idx < (folder->firstFile + folder->numFiles); ++idx) {
+    for (const size_t idx : *folder) {
         const MetroFile& mf = mFiles[idx];
         if (name == mf.name) {
             result = idx;
@@ -209,7 +207,7 @@ const MetroFile* VFXReader::GetParentFolder(const size_t fileIdx) const {
 
     for (const size_t idx : mFolders) {
         const MetroFile* folder = &mFiles[idx];
-        if (fileIdx >= folder->firstFile && fileIdx < (folder->firstFile + folder->numFiles)) {
+        if (folder->ContainsFile(fileIdx)) {
             result = folder;
             break;
         }
@@ -226,7 +224,7 @@ size_t VFXReader::CountFilesInFolder(const size_t idx) const {
     size_t result = 0;
 
     const MetroFile& folder = mFiles[idx];
-    for (size_t idx = folder.firstFile; idx < (folder.firstFile + folder.numFiles); ++idx) {
+    for (const size_t idx : folder) {
         const MetroFile& mf = mFiles[idx];
         if (mf.IsFile()) {
             result++;
@@ -243,7 +241,7 @@ MyArray<size_t> VFXReader::FindFilesInFolder(const size_t folderIdx, const CharS
 
     const MetroFile& folder = mFiles[folderIdx];
     if (!folder.IsFile()) {
-        for (size_t idx = folder.firstFile; idx < (folder.firstFile + folder.numFiles); ++idx) {
+        for (const size_t idx : folder) {
             const MetroFile& mf = mFiles[idx];
 
             if (!mf.IsFile()) {
@@ -273,11 +271,11 @@ MyArray<size_t> VFXReader::FindFilesInFolder(const CharString& folder, const Cha
 
 
 
-size_t VFXReader::Decompress(const BytesArray& compressedData, BytesArray& uncompressedData) {
+size_t VFXReader::Decompress(const void* compressedData, const size_t compressedSize, void* uncompressedData, const size_t uncompressedSize) {
     size_t result = 0;
 
-    MemStream stream(compressedData.data(), compressedData.size());
-    char* dst = rcast<char*>(uncompressedData.data());
+    MemStream stream(compressedData, compressedSize);
+    char* dst = rcast<char*>(uncompressedData);
 
     size_t outCursor = 0;
     while (!stream.Ended()) {

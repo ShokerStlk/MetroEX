@@ -41,14 +41,13 @@ bool MetroLevel::LoadFromData(const uint8_t* data, const size_t length, VFXReade
                 const size_t geometryFileIdx = vfxReader->FindFile(partName + ".geom_pc", folder);
                 if (MetroFile::InvalidFileIdx != descriptionFileIdx && MetroFile::InvalidFileIdx != geometryFileIdx) {
                     MyArray<GeomObjectInfo> infos;
-                    BytesArray content;
-                    if (vfxReader->ExtractFile(descriptionFileIdx, content)) {
-                        this->ReadGeometryDescription(content.data(), content.size(), infos);
+                    MemStream stream = vfxReader->ExtractFile(descriptionFileIdx);
+                    if (stream) {
+                        this->ReadGeometryDescription(stream, infos);
                     }
 
-                    content.clear();
-                    if (!infos.empty() && vfxReader->ExtractFile(geometryFileIdx, content)) {
-                        this->ReadLevelGeometry(content.data(), content.size(), infos);
+                    if (!infos.empty() && (stream = vfxReader->ExtractFile(geometryFileIdx))) {
+                        this->ReadLevelGeometry(stream, infos);
                     }
                 }
             }
@@ -69,9 +68,7 @@ const MetroMesh* MetroLevel::GetMesh(const size_t idx) const {
 }
 
 
-void MetroLevel::ReadGeometryDescription(const uint8_t* data, const size_t length, MyArray<GeomObjectInfo>& infos) {
-    MemStream stream(data, length);
-
+void MetroLevel::ReadGeometryDescription(MemStream& stream, MyArray<GeomObjectInfo>& infos) {
     stream.SkipBytes(20); // unknown
 
     size_t nextIdx = 0;
@@ -111,9 +108,7 @@ void MetroLevel::ReadGeomObjectInfo(MemStream& stream, GeomObjectInfo& info) {
     }
 }
 
-void MetroLevel::ReadLevelGeometry(const uint8_t* data, const size_t length, const MyArray<GeomObjectInfo>& infos) {
-    MemStream stream(data, length);
-
+void MetroLevel::ReadLevelGeometry(MemStream& stream, const MyArray<GeomObjectInfo>& infos) {
     stream.SkipBytes(24); // some header ???
 
     MyArray<MetroMesh*> meshes(infos.size());

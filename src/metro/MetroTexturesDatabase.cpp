@@ -69,9 +69,7 @@ MetroTexturesDatabase::~MetroTexturesDatabase() {
 
 }
 
-bool MetroTexturesDatabase::LoadFromData(const void* data, const size_t length) {
-    MemStream stream(data, length);
-
+bool MetroTexturesDatabase::LoadFromData(MemStream& stream) {
     size_t numEntries = stream.ReadTyped<uint32_t>();
     if (numEntries == 0x52455641) { // AVER
         stream.SkipBytes(2);
@@ -115,10 +113,8 @@ struct TextureAlias {
     uint32_t    alias;
 } PACKED_STRUCT_END;
 
-bool MetroTexturesDatabase::LoadAliasesFromData(const void* data, const size_t length) {
+bool MetroTexturesDatabase::LoadAliasesFromData(MemStream& stream) {
     bool result = false;
-
-    MemStream stream(data, length);
 
     const size_t flags = stream.ReadTyped<uint8_t>();
     if (flags != 4) {

@@ -24,8 +24,11 @@ MetroTexture::~MetroTexture() {
 }
 
 
-bool MetroTexture::LoadFromData(const uint8_t* data, const size_t length, const CharString& name) {
+bool MetroTexture::LoadFromData(MemStream& stream, const CharString& name) {
     bool result = false;
+
+    const uint8_t* data = stream.GetDataAtCursor();
+    const size_t length = stream.Remains();
 
     if (*rcast<const uint32_t*>(data) == cDDSFileSignature) {
         // this is a plain DDS file

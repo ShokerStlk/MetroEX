@@ -32,10 +32,8 @@ MetroSkeleton::~MetroSkeleton() {
 
 }
 
-bool MetroSkeleton::LoadFromData(const uint8_t* data, const size_t dataLength) {
+bool MetroSkeleton::LoadFromData(MemStream& stream) {
     bool result = false;
-
-    MemStream stream(data, dataLength);
 
     const uint8_t flags = stream.ReadTyped<uint8_t>();
     const bool hasDebugInfo = TestBit(flags, MetroBinFlags::HasDebugInfo);

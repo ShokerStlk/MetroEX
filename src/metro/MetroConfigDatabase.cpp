@@ -11,9 +11,7 @@ MetroConfigsDatabase::~MetroConfigsDatabase() {
 
 }
 
-bool MetroConfigsDatabase::LoadFromData(const void* data, const size_t length) {
-    MemStream stream(data, length);
-
+bool MetroConfigsDatabase::LoadFromData(MemStream& stream) {
     mStatsTotalDecryptedNames = 0;
     mStatsTotalEncryptedNames = 0;
 
@@ -37,9 +35,6 @@ bool MetroConfigsDatabase::LoadFromData(const void* data, const size_t length) {
 
         stream.SkipBytes(bodySize);
     }
-
-    mData.resize(length);
-    memcpy(mData.data(), data, length);
 
     return !mConfigsChunks.empty();
 }

@@ -3,10 +3,54 @@
 #include "mymath.h"
 
 struct MetroFile {
-    static const size_t InvalidFileIdx = ~0;
+public:
+    struct iterator {
+        friend MetroFile;
+    private:
+        iterator(const size_t _idx) : idx(_idx) {}
 
-    bool IsFile() const {
+    public:
+        inline size_t operator *() const {
+            return this->idx;
+        }
+        inline bool operator ==(const iterator& other) {
+            return this->idx == other.idx;
+        }
+        inline bool operator !=(const iterator& other) {
+            return this->idx != other.idx;
+        }
+        inline iterator& operator ++() {
+            ++this->idx;
+            return *this;
+        }
+        inline iterator operator ++(int) {
+            iterator prev(this->idx);
+            ++this->idx;
+            return prev;
+        }
+
+    private:
+        size_t idx;
+    };
+
+public:
+    static const size_t InvalidFileIdx = kInvalidValue;
+
+    inline bool IsFile() const {
         return 0 == (this->flags & 8);
+    }
+
+    inline bool ContainsFile(const size_t fileIdx) const {
+        return this->IsFile() ? false : (fileIdx >= this->firstFile && fileIdx < (this->firstFile + this->numFiles));
+    }
+
+    //#NOTE_SK: iteration over files
+    //          using standard names so that modern for(i : a) syntaxis works
+    iterator begin() const {
+        return (this->IsFile() ? iterator(kInvalidValue) : iterator(this->firstFile));
+    }
+    iterator end() const {
+        return (this->IsFile() ? iterator(kInvalidValue) : iterator(this->firstFile + this->numFiles));
     }
 
     // common fields

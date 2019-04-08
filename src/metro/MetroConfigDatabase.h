@@ -13,7 +13,7 @@ public:
     MetroConfigsDatabase();
     ~MetroConfigsDatabase();
 
-    bool                LoadFromData(const void* data, const size_t length);
+    bool                LoadFromData(MemStream& stream);
 
     const ConfigInfo*   FindFile(const uint32_t nameCRC) const;
     const ConfigInfo*   FindFile(const CharString& name) const;
@@ -22,7 +22,6 @@ public:
     const ConfigInfo&   GetFileByIdx(const size_t chunkIdx) const;
 
 private:
-    MyArray<uint8_t>    mData;
     MyArray<ConfigInfo> mConfigsChunks;
 
     size_t              mStatsTotalDecryptedNames;

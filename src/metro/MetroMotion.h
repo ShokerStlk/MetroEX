@@ -15,7 +15,7 @@ public:
     MetroMotion(const CharString& name = "");
     ~MetroMotion();
 
-    bool                    LoadFromData(const void* data, const size_t dataLength);
+    bool                    LoadFromData(MemStream& stream);
     const CharString&       GetName() const;
 
     size_t                  GetBonesCRC() const;

@@ -1,5 +1,11 @@
+#include "mycommon.h"
+
 #include "ui/MainForm.h"
 #include <VersionHelpers.h>
+
+// String to std::string wrapper
+#include <msclr/marshal_cppstd.h>
+using namespace msclr::interop;
 
 //#NOTE_SK: CLR issues - have to undef this bullshit so I can use the proper static function of Icon
 //Thanks Microsoft !!!
@@ -42,9 +48,15 @@ void Main(array<String^>^ args) {
     MetroEX::MainForm form;
     form.Icon = appIcon;
 
+    fs::path folder = marshal_as<std::wstring>(Application::StartupPath);
+    LogOpen(folder);
+
     if (IsWindows7OrGreater() && !IsWindows8OrGreater()) {
+        LogPrint(LogLevel::Info, "Windows 7 detected, adding custom mousewheel filter...");
         Application::AddMessageFilter(gcnew WheelFilter());
     }
 
     Application::Run(%form);
+
+    LogClose();
 }

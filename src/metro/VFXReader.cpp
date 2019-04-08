@@ -19,6 +19,8 @@ VFXReader::~VFXReader() {
 bool VFXReader::LoadFromFile(const fs::path& filePath) {
     bool result = false;
 
+    LogPrint(LogLevel::Info, "Loading vfx file...");
+
     std::ifstream file(filePath, std::ifstream::binary);
     if (file.good()) {
         BytesArray fileData;
@@ -52,12 +54,17 @@ bool VFXReader::LoadFromFile(const fs::path& filePath) {
 
         const size_t version = stream.ReadTyped<uint32_t>();
         const size_t compressionType = stream.ReadTyped<uint32_t>();
+
+        LogPrint(LogLevel::Info, "version = " + std::to_string(version) + ", compression = " + std::to_string(compressionType));
+
         if (version == kVFXVersionExodus && compressionType == kVFXCompressionLZ4) { // Metro Exodus and LZ4
             mContentVersion = stream.ReadStringZ();
             stream.SkipBytes(16); // guid, seems to be static across the game
             const size_t numVFS = stream.ReadTyped<uint32_t>();
             const size_t numFiles = stream.ReadTyped<uint32_t>();
             const size_t unknown_0 = stream.ReadTyped<uint32_t>();
+
+            LogPrint(LogLevel::Info, "content version = " + mContentVersion + ", packages = " + std::to_string(numVFS) + ", files = " + std::to_string(numFiles));
 
             mPaks.resize(numVFS);
             for (Pak& pak : mPaks) {
@@ -98,7 +105,13 @@ bool VFXReader::LoadFromFile(const fs::path& filePath) {
             mBasePath = filePath.parent_path();
             mFileName = filePath.filename().string();
             result = true;
+
+            LogPrint(LogLevel::Info, "VFX loaded successfully");
+        } else {
+            LogPrint(LogLevel::Error, "Unknown version or compression");
         }
+    } else {
+        LogPrint(LogLevel::Error, "Failed to open file");
     }
 
     return result;

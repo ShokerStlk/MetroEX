@@ -156,6 +156,11 @@ public:
         return *this;
     }
 
+    inline void SetWindow(const size_t wndOffset, const size_t wndLength) {
+        this->cursor = wndOffset;
+        this->length = wndOffset + wndLength;
+    }
+
     inline operator bool() const {
         return this->Good();
     }

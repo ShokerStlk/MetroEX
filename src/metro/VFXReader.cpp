@@ -129,7 +129,7 @@ MemStream VFXReader::ExtractFile(const size_t fileIdx, const size_t subOffset, c
         file.seekg(mf.offset);
 
         const size_t streamOffset = (subOffset == kInvalidValue) ? 0 : std::min<size_t>(subOffset, mf.sizeUncompressed);
-        const size_t streamLength = (subLength == kInvalidValue) ? (mf.sizeUncompressed - streamOffset) : (mf.sizeUncompressed - std::min<size_t>(subOffset, mf.sizeUncompressed));
+        const size_t streamLength = (subLength == kInvalidValue) ? (mf.sizeUncompressed - streamOffset) : (std::min<size_t>(subLength, mf.sizeUncompressed - streamOffset));
 
         uint8_t* fileContent = rcast<uint8_t*>(malloc(mf.sizeCompressed));
         file.read(rcast<char*>(fileContent), mf.sizeCompressed);
@@ -144,6 +144,10 @@ MemStream VFXReader::ExtractFile(const size_t fileIdx, const size_t subOffset, c
             }
 
             free(fileContent);
+        }
+
+        if (result) {
+            result.SetWindow(streamOffset, streamLength);
         }
     }
 

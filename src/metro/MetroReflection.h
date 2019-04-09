@@ -47,6 +47,9 @@ METRO_REGISTER_TYPE_ALIAS(bool, bool)
 METRO_REGISTER_TYPE_ALIAS(uint8_t, u8)
 METRO_REGISTER_TYPE_ALIAS(uint16_t, u16)
 METRO_REGISTER_TYPE_ALIAS(uint32_t, u32)
+METRO_REGISTER_TYPE_ALIAS(int8_t, s8)
+METRO_REGISTER_TYPE_ALIAS(int16_t, s16)
+METRO_REGISTER_TYPE_ALIAS(int32_t, s32)
 METRO_REGISTER_TYPE_ALIAS(float, fp32)
 METRO_REGISTER_TYPE_ALIAS(vec2, vec2f)
 METRO_REGISTER_TYPE_ALIAS(vec3, vec3f)
@@ -71,6 +74,10 @@ public:
         , mVerifyTypesInfo(verifyTypeInfo)
         , mReadRefStrings(refStrings)
     {}
+
+    inline MemStream& GetStream() {
+        return mStream;
+    }
 
     void SetOptions(const bool verifyTypeInfo = false, const bool refStrings = false) {
         mVerifyTypesInfo = verifyTypeInfo;

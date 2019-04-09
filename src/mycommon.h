@@ -254,11 +254,11 @@ private:
 
 
 template <typename T>
-constexpr T SetBit(const T& v, const T& bit) {
+constexpr T SetBit(T& v, const T& bit) {
     return v |= bit;
 }
 template <typename T>
-constexpr T RemoveBit(const T& v, const T& bit) {
+constexpr T RemoveBit(T& v, const T& bit) {
     return v &= ~bit;
 }
 template <typename T>

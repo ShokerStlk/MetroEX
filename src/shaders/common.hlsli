@@ -5,11 +5,11 @@ struct VSOutput {
 };
 
 cbuffer ConstantBuffer0 : register(b0) {
-    float4  BSphere;
-    matrix  MatModel;
-    matrix  MatView;
-    matrix  MatProjection;
-    matrix  MatModelViewProj;
-    float4  CamParams;          // x - FOV, y - aspect, zw - vacant
-    matrix  Bones[256];
+    float4            BSphere;
+    row_major matrix  MatModel;
+    row_major matrix  MatView;
+    row_major matrix  MatProjection;
+    row_major matrix  MatModelViewProj;
+    float4            CamParams;          // x - FOV, y - aspect, zw - vacant
+    row_major matrix  Bones[256];
 };

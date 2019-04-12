@@ -120,11 +120,13 @@
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">CompileAsCpp</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">CompileAsCpp</CompileAs>
     </ClCompile>
+    <ClCompile Include="src\metro\MetroBinArchive.cpp" />
     <ClCompile Include="src\Application.cpp" />
     <ClCompile Include="src\camera.cpp" />
     <ClCompile Include="src\dds_utils.cpp" />
     <ClCompile Include="src\hashing.cpp" />
     <ClCompile Include="src\log.cpp" />
+    <ClCompile Include="src\metro\MetroBinArrayArchive.cpp" />
     <ClCompile Include="src\metro\MetroConfigDatabase.cpp" />
     <ClCompile Include="src\metro\MetroLevel.cpp" />
     <ClCompile Include="src\metro\MetroDatabases.h" />
@@ -148,7 +150,11 @@
     <ClInclude Include="libs\bc7enc16\bc7decomp.h" />
     <ClInclude Include="libs\lz4\lz4.h" />
     <ClInclude Include="libs\xxhash\xxhash.h" />
+    <ClInclude Include="src\metro\MetroBinIArchive.h" />
+    <ClInclude Include="src\metro\MetroBinTemplateEngine.h" />
+    <ClInclude Include="src\metro\MetroBinArchive.h" />
     <ClInclude Include="src\log.h" />
+    <ClInclude Include="src\metro\MetroBinArrayArchive.h" />
     <ClInclude Include="src\metro\MetroConfigNames.h" />
     <ClInclude Include="src\camera.h" />
     <ClInclude Include="src\dds_utils.h" />

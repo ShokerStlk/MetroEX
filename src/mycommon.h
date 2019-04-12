@@ -240,7 +240,7 @@ public:
         return this->data + this->cursor;
     }
 
-    MemStream Substream(const size_t subStreamLength) {
+    MemStream Substream(const size_t subStreamLength) const {
         const size_t allowedLength = ((this->cursor + subStreamLength) > this->length) ? (this->length - this->cursor) : subStreamLength;
         return MemStream(this->GetDataAtCursor(), allowedLength);
     }

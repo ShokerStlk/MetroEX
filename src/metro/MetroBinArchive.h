@@ -11,20 +11,21 @@ class MetroBinArchive : IMetroBinArchive
 {
 public:
     static const size_t kHeaderNotExist = 0;
-    static const size_t kHeaderDoAutoSearch = ~0;
+    static const size_t kHeaderDoAutoSearch = kInvalidValue;
 
     struct ChunkData {
     private:
-        uint32_t    index;
-        size_t      offset;
-        size_t      size;
-        bool        isStringTable;
+        size_t  index;
+        size_t  offset;
+        size_t  size;
+        bool    isStringTable;
 
     public:
-        ChunkData(size_t _offset, uint32_t _index, size_t _size) : isStringTable(false) {
-            offset  = _offset;
-            index   = _index;
-            size    = _size;
+        ChunkData(const size_t _offset, const size_t _index, const size_t _size)
+            : index(_index)
+            , offset(_offset)
+            , size(_size)
+            , isStringTable(false) {
         }
 
         inline size_t GetChunkStartOffset() const {
@@ -32,18 +33,18 @@ public:
         }
 
         inline size_t GetChunkEndOffset() const {
-            return GetChunkDataOffset() + size;
+            return this->GetChunkDataOffset() + size;
         }
 
         inline size_t GetChunkDataOffset() const {
-            return GetChunkStartOffset() + 0x4 /*chunk id*/ + 0x4 /*chunk size*/;
+            return this->GetChunkStartOffset() + 0x4 /*chunk id*/ + 0x4 /*chunk size*/;
         }
 
         inline size_t GetTotalChunkSize() const {
-            return GetChunkEndOffset() - GetChunkStartOffset();
+            return this->GetChunkEndOffset() - this->GetChunkStartOffset();
         }
 
-        inline uint32_t GetChunkIdx() const {
+        inline size_t GetChunkIdx() const {
             return index;
         }
 
@@ -66,30 +67,26 @@ public:
 
     MetroBinArchive(const CharString& name, const MemStream& _binStream, size_t _headerSize);
 
-    virtual bool IsBinArchive() { return true; };
+    bool IsBinArchive() override { return true; };
 
-    inline virtual const MemStream& GetRawStream() const {
+    virtual const MemStream& GetRawStream() const override {
         return mFileStream;
     }
 
-    inline virtual MemStream& GetRawDangerStream() { // use carefully
+    virtual MemStream& GetRawDangerStream() override { // use carefully
         return mFileStream;
     }
 
-    inline virtual MemStream GetRawStreamCopy() {
+    virtual MemStream GetRawStreamCopy() override {
         return MemStream(mFileStream);
     }
 
-    inline virtual MemStream GetRawStreamCopy() const {
+    virtual MemStream GetRawStreamCopy() const override {
         return MemStream(mFileStream);
     }
 
     inline bool HasChunks() const {
-        if (HasRefStrings()) {
-            return true;
-        }
-
-        return false;
+        return this->HasRefStrings();
     }
 
     inline bool HasRefStrings() const {
@@ -116,13 +113,8 @@ public:
         return mBinFlags;
     }
 
-    inline constexpr void SetFlag(uint8_t flag, bool value) {
-        if (value == true) {
-            SetBit(mBinFlags, flag);
-        }
-        else {
-            RemoveBit(mBinFlags, flag);
-        }
+    inline void SetFlag(const uint8_t flag, const bool toSet) {
+        mBinFlags = toSet ? SetBit(mBinFlags, flag) : RemoveBit(mBinFlags, flag);
     }
 
     // Get stream cursor to bin flags position
@@ -132,17 +124,17 @@ public:
 
     // Get stream cursor to first chunk position (after bin flags, before chunk idx, chunk size)
     inline size_t GetOffsetFirstChunkBegin() const {
-        assert(HasChunks());
-        return GetOffsetBinFlags() + 0x1 /*bin flags*/;
+        assert(this->HasChunks());
+        return this->GetOffsetBinFlags() + 0x1 /*bin flags*/;
     }
 
     // Get stream cursor to first data position (after bin flags, chunk idx, chunk size)
     inline size_t GetOffsetFirstDataBegin() const {
-        if (HasChunks()) {
-            return GetOffsetFirstChunkBegin() + 0x4 /*chunk id*/ + 0x4 /*chunk size*/;
+        if (this->HasChunks()) {
+            return this->GetOffsetFirstChunkBegin() + 0x4 /*chunk id*/ + 0x4 /*chunk size*/;
         }
 
-        return GetOffsetBinFlags() + 0x1 /*bin flags*/;
+        return this->GetOffsetBinFlags() + 0x1 /*bin flags*/;
     }
 
     inline size_t GetChunkCount() const {
@@ -150,39 +142,39 @@ public:
     }
 
     inline ChunkData& GetChunkByNum(size_t chunkIdx) { // chunkIdx from 1 to ...
-        assert(chunkIdx > 0 && chunkIdx <= GetChunkCount());
+        assert(chunkIdx > 0 && chunkIdx <= this->GetChunkCount());
         return mChunks[chunkIdx - 1];
     }
 
     inline const ChunkData& GetChunkByNum(size_t chunkIdx) const { // chunkIdx from 1 to ...
-        assert(chunkIdx > 0 && chunkIdx <= GetChunkCount());
+        assert(chunkIdx > 0 && chunkIdx <= this->GetChunkCount());
         return mChunks[chunkIdx - 1];
     }
 
     inline ChunkData& GetFirstChunk() {
-        assert(HasChunks());
-        return GetChunkByNum(1);
+        assert(this->HasChunks());
+        return this->GetChunkByNum(1);
     }
 
     inline const ChunkData& GetFirstChunk() const {
-        assert(HasChunks());
-        return GetChunkByNum(1);
+        assert(this->HasChunks());
+        return this->GetChunkByNum(1);
     }
 
     inline ChunkData& GetLastChunk() {
-        assert(HasChunks());
-        size_t cnt = GetChunkCount();
-        return GetChunkByNum(cnt);
+        assert(this->HasChunks());
+        const size_t cnt = this->GetChunkCount();
+        return this->GetChunkByNum(cnt);
     }
 
     inline const ChunkData& GetLastChunk() const {
-        assert(HasChunks());
-        size_t cnt = GetChunkCount();
-        return GetChunkByNum(cnt);
+        assert(this->HasChunks());
+        const size_t cnt = this->GetChunkCount();
+        return this->GetChunkByNum(cnt);
     }
 
-    MyArray<CharString>     ReadStringTable() const;
-    MetroReflectionReader   ReturnReflectionReader(size_t offset = 0) const;
+    StringArray             ReadStringTable() const;
+    MetroReflectionReader   ReturnReflectionReader(const size_t offset = 0) const;
 
 private:
     CharString  mFileName;

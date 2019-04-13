@@ -225,7 +225,7 @@ public:
         result.assign(ptr + this->cursor, i - this->cursor);
         this->cursor = i + 1;
 
-        return result;
+        return std::move(result);
     }
 
     inline size_t GetCursor() const {
@@ -242,7 +242,7 @@ public:
 
     MemStream Substream(const size_t subStreamLength) const {
         const size_t allowedLength = ((this->cursor + subStreamLength) > this->length) ? (this->length - this->cursor) : subStreamLength;
-        return MemStream(this->GetDataAtCursor(), allowedLength);
+        return std::move(MemStream(this->GetDataAtCursor(), allowedLength));
     }
 
 private:
@@ -273,6 +273,12 @@ inline uint32_t CountBitsU32(uint32_t x) {
     x = (x & 0x00FF00FF) + ((x >>  8) & 0x00FF00FF);
     x = (x & 0x0000FFFF) + ((x >> 16) & 0x0000FFFF);
     return x;
+}
+
+template <char a, char b, char c, char d>
+constexpr uint32_t MakeFourcc() {
+    const uint32_t result = scast<uint32_t>(a) | (scast<uint32_t>(b) << 8) | (scast<uint32_t>(c) << 16) | (scast<uint32_t>(d) << 24);
+    return result;
 }
 
 PACKED_STRUCT_BEGIN

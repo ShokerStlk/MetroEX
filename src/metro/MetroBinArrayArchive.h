@@ -69,46 +69,46 @@ public:
         }
     };
 
-    MetroBinArrayArchive(const CharString& name, const MemStream& _binStream, const CharString& _headerAlias);
+    MetroBinArrayArchive(const CharString& name, const MemStream& _binStream, const uint32_t _headerAlias);
 
-    virtual bool IsBinArrayArchive() { return true; };
+    virtual bool IsBinArrayArchive() override { return true; };
 
     inline ChunkData& GetChunkByIdx(size_t idx) {
-        assert(idx < GetBinCnt());
+        assert(idx < this->GetBinCnt());
         return mChunks[idx];
     }
 
     inline const ChunkData& GetChunkByIdx(size_t idx) const {
-        assert(idx < GetBinCnt());
+        assert(idx < this->GetBinCnt());
         return mChunks[idx];
     }
 
     inline MetroBinArchive& GetBinByIdx(size_t idx) {
-        return GetChunkByIdx(idx).GetBinArchive();
+        return this->GetChunkByIdx(idx).GetBinArchive();
     }
 
     inline const MetroBinArchive& GetBinByIdx(size_t idx) const {
-        assert(idx < GetBinCnt());
-        return GetChunkByIdx(idx).GetBinArchive();
+        assert(idx < this->GetBinCnt());
+        return this->GetChunkByIdx(idx).GetBinArchive();
     }
 
     inline size_t GetBinCnt() const {
         return mChunks.size();
     }
 
-    inline virtual const MemStream& GetRawStream() const {
+    virtual const MemStream& GetRawStream() const override {
         return mFileStream;
     }
 
-    inline virtual MemStream& GetRawDangerStream() { // use carefully
+    virtual MemStream& GetRawDangerStream() override { // use carefully
         return mFileStream;
     }
 
-    inline virtual MemStream GetRawStreamCopy() {
+    virtual MemStream GetRawStreamCopy() override {
         return MemStream(mFileStream);
     }
 
-    inline virtual MemStream GetRawStreamCopy() const {
+    virtual MemStream GetRawStreamCopy() const override {
         return MemStream(mFileStream);
     }
 

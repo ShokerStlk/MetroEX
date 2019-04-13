@@ -72,8 +72,20 @@ public:
     MetroReflectionReader(const MemStream& s, const bool verifyTypeInfo = false, const bool refStrings = false)
         : mStream(s)
         , mVerifyTypesInfo(verifyTypeInfo)
-        , mReadRefStrings(refStrings)
-    {}
+        , mReadRefStrings(refStrings) {
+    }
+
+    MetroReflectionReader(const MetroReflectionReader& other)
+        : mStream(other.mStream)
+        , mVerifyTypesInfo(other.mVerifyTypesInfo)
+        , mReadRefStrings(other.mReadRefStrings) {
+    }
+
+    MetroReflectionReader(MetroReflectionReader&& other)
+        : mStream(std::move(other.mStream))
+        , mVerifyTypesInfo(other.mVerifyTypesInfo)
+        , mReadRefStrings(other.mReadRefStrings) {
+    }
 
     inline MemStream& GetStream() {
         return mStream;
@@ -91,7 +103,7 @@ public:
             return false;
         }
 
-        CharString type = mStream.ReadStringZ();
+        mStream.ReadStringZ();
         return true;
     }
 
@@ -129,10 +141,11 @@ public:
     void ReadStructArray(const CharString& memberName, MyArray<T>& v) {
         if (mVerifyTypesInfo) {
             this->VerifyTypeInfo(memberName, "array");
-            CharString& sectionName = this->BeginSection();
+            const CharString& sectionName = this->BeginSection();
             assert(sectionName == memberName);
             this->VerifyTypeInfo("count", MetroTypeGetAlias<uint32_t>());
         }
+
         uint32_t arraySize;
         (*this) >> arraySize;
         if (arraySize > 0) {
@@ -214,12 +227,12 @@ public:
 
 
 #define IMPLEMENT_TYPE_ARRAY_READ(type)     \
-    void operator >>(MyArray<type>& v) {      \
+    void operator >>(MyArray<type>& v) {    \
         uint32_t numElements = 0;           \
-        (*this) >> numElements;               \
+        (*this) >> numElements;             \
         v.resize(numElements);              \
         for (type& e : v) {                 \
-            (*this) >> e;                     \
+            (*this) >> e;                   \
         }                                   \
     }
 

@@ -33,8 +33,7 @@ MetroBinArchive::MetroBinArchive(const CharString& name, const MemStream& _binSt
 
             // Set header size
             mHeaderSize = firstChunkPos - 0x1 /*bin flags*/;
-        }
-        else {
+        } else {
             mHeaderSize = _headerSize;
         }
     }
@@ -44,19 +43,20 @@ MetroBinArchive::MetroBinArchive(const CharString& name, const MemStream& _binSt
     mBinFlags = mFileStream.ReadTyped<uint8_t>();
 
     // Read chunks
-    if (HasChunks()) {
+    if (this->HasChunks()) {
         while (!mFileStream.Ended()) {
-            size_t      chunkOffset = mFileStream.GetCursor();
-            uint32_t    chunkIndex  = mFileStream.ReadTyped<uint32_t>();
-            uint32_t    chunkSize   = mFileStream.ReadTyped<uint32_t>();
-            ChunkData&  chunkData   = mChunks.emplace_back(chunkOffset, chunkIndex, chunkSize);
+            mChunks.push_back({
+                mFileStream.GetCursor(),
+                mFileStream.ReadTyped<uint32_t>(),
+                mFileStream.ReadTyped<uint32_t>()
+            });
 
-            mFileStream.SkipBytes(chunkData.GetChunkSize());
+            mFileStream.SkipBytes(mChunks.back().GetChunkSize());
         }
 
         // Mark RefStrings chunk
-        if (HasRefStrings()) {
-            ChunkData& lastChunkData = GetLastChunk();
+        if (this->HasRefStrings()) {
+            ChunkData& lastChunkData = this->GetLastChunk();
             lastChunkData.SetIsStringTable(true);
         }
     }
@@ -65,40 +65,35 @@ MetroBinArchive::MetroBinArchive(const CharString& name, const MemStream& _binSt
     mFileStream.SetCursor(0);
 }
 
-MyArray<CharString> MetroBinArchive::ReadStringTable() const {
-    MyArray<CharString> stringsTablel(0);
-    stringsTablel.clear();
+StringArray MetroBinArchive::ReadStringTable() const {
+    StringArray result;
 
-    if (HasRefStrings() == false) {
-        return stringsTablel;
+    if (this->HasRefStrings()) {
+        MemStream& rawStream = GetRawStreamCopy();
+
+        // Read strings
+        const ChunkData& lastChunk = GetLastChunk();
+        assert(lastChunk.IsStringTable());
+
+        rawStream.SetCursor(lastChunk.GetChunkDataOffset());
+
+        const size_t numStrings = rawStream.ReadTyped<uint32_t>();
+        result.resize(numStrings);
+
+        for (CharString& s : result) {
+            s = rawStream.ReadStringZ();
+        }
     }
 
-    MemStream& rawStream = GetRawStreamCopy();
-
-    // Read strings
-    const ChunkData& lastChunk = GetLastChunk();
-    assert(lastChunk.IsStringTable());
-
-    rawStream.SetCursor(lastChunk.GetChunkDataOffset());
-
-    const size_t numStrings = rawStream.ReadTyped<uint32_t>();
-    stringsTablel.reserve(numStrings);
-
-    for (size_t i = 0; i < numStrings; i++) {
-        CharString strVal = rawStream.ReadStringZ();
-        stringsTablel.push_back(strVal);
-    }
-
-    // Return value
-    return stringsTablel;
+    return result;
 }
 
-MetroReflectionReader MetroBinArchive::ReturnReflectionReader(size_t offset) const {
-    MemStream& rawStream = GetRawStreamCopy();
+MetroReflectionReader MetroBinArchive::ReturnReflectionReader(const size_t offset) const {
+    MemStream rawStream = this->GetRawStreamCopy();
     rawStream.SetCursor(offset);
 
     MetroReflectionReader reader = MetroReflectionReader(rawStream);
-    reader.SetOptions(HasDebugInfo(), HasRefStrings());
+    reader.SetOptions(this->HasDebugInfo(), this->HasRefStrings());
 
-    return reader;
+    return std::move(reader);
 }

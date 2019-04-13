@@ -71,9 +71,9 @@ MetroTexturesDatabase::~MetroTexturesDatabase() {
 }
 
 bool MetroTexturesDatabase::LoadFromData(MemStream& stream) {
-    MetroBinArrayArchive binArchive("textures_handles_storage.bin", stream, "AVER");
+    MetroBinArrayArchive binArchive("textures_handles_storage.bin", stream, MakeFourcc<'A','V','E','R'>());
 
-    size_t numEntries = binArchive.GetBinCnt();
+    const size_t numEntries = binArchive.GetBinCnt();
 
     mDatabase.reserve(numEntries);
     mPool.resize(numEntries);
@@ -110,7 +110,7 @@ bool MetroTexturesDatabase::LoadAliasesFromData(MemStream& stream) {
     assert(bin.HasRefStrings());
     StringArray strings = bin.ReadStringTable();
 
-    size_t dataOffset = bin.GetFirstChunk().GetChunkDataOffset();
+    const size_t dataOffset = bin.GetFirstChunk().GetChunkDataOffset();
     MetroReflectionReader reader = bin.ReturnReflectionReader(dataOffset);
 
     reader.GetStream().SkipBytes(9); // skip unkn data
@@ -119,7 +119,7 @@ bool MetroTexturesDatabase::LoadAliasesFromData(MemStream& stream) {
     METRO_READ_MEMBER(reader, numAliases);
     mAliases.reserve(numAliases);
 
-    for (size_t i = 0; i < (size_t)numAliases; ++i) {
+    for (size_t i = 0; i < scast<size_t>(numAliases); ++i) {
         MetroTextureAliasInfo texAliasInfo;
         reader >> texAliasInfo;
 

@@ -19,7 +19,7 @@ MetroBinArrayArchive::ChunkData::ChunkData(const MemStream& fileStream) {
     );
 }
 
-MetroBinArrayArchive::MetroBinArrayArchive(const CharString& name, const MemStream& _binStream, const CharString& _headerAlias) {
+MetroBinArrayArchive::MetroBinArrayArchive(const CharString& name, const MemStream& _binStream, const uint32_t _headerAlias) {
     // Get raw memory stream
     mFileName = name;
     mFileStream = MemStream(_binStream);
@@ -32,28 +32,18 @@ MetroBinArrayArchive::MetroBinArrayArchive(const CharString& name, const MemStre
     mHeaderAlias = _headerAlias;
     mIsHeaderExist = false;
 
-    if (!_headerAlias.empty()) {
-        for (int i = 0; i < 4; i++) {
-            char s = mFileStream.ReadTyped<char>();
-            if (s != _headerAlias[i]) {
-                break;
-            }
-            else if (i == 3) {
-                mIsHeaderExist = true;
-            }
-        }
-    }
+    const uint32_t first4Bytes = *rcast<const uint32_t*>(mFileStream.GetDataAtCursor());
+
+    mIsHeaderExist = _headerAlias && (first4Bytes == _headerAlias);
 
     // Search for file version
     if (mIsHeaderExist) {
+        mFileStream.SkipBytes(4);
         mHeaderVersion = mFileStream.ReadTyped<uint16_t>();
-    }
-    else {
-        mFileStream.SetCursor(cursorAtStart);
     }
 
     // Count elements, prepare array
-    size_t numBins = mFileStream.ReadTyped<uint32_t>();
+    const size_t numBins = mFileStream.ReadTyped<uint32_t>();
     assert(numBins > 0);
     mChunks.reserve(numBins);
 

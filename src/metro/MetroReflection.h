@@ -47,6 +47,9 @@ METRO_REGISTER_TYPE_ALIAS(bool, bool)
 METRO_REGISTER_TYPE_ALIAS(uint8_t, u8)
 METRO_REGISTER_TYPE_ALIAS(uint16_t, u16)
 METRO_REGISTER_TYPE_ALIAS(uint32_t, u32)
+METRO_REGISTER_TYPE_ALIAS(int8_t, s8)
+METRO_REGISTER_TYPE_ALIAS(int16_t, s16)
+METRO_REGISTER_TYPE_ALIAS(int32_t, s32)
 METRO_REGISTER_TYPE_ALIAS(float, fp32)
 METRO_REGISTER_TYPE_ALIAS(vec2, vec2f)
 METRO_REGISTER_TYPE_ALIAS(vec3, vec3f)
@@ -69,8 +72,24 @@ public:
     MetroReflectionReader(const MemStream& s, const bool verifyTypeInfo = false, const bool refStrings = false)
         : mStream(s)
         , mVerifyTypesInfo(verifyTypeInfo)
-        , mReadRefStrings(refStrings)
-    {}
+        , mReadRefStrings(refStrings) {
+    }
+
+    MetroReflectionReader(const MetroReflectionReader& other)
+        : mStream(other.mStream)
+        , mVerifyTypesInfo(other.mVerifyTypesInfo)
+        , mReadRefStrings(other.mReadRefStrings) {
+    }
+
+    MetroReflectionReader(MetroReflectionReader&& other)
+        : mStream(std::move(other.mStream))
+        , mVerifyTypesInfo(other.mVerifyTypesInfo)
+        , mReadRefStrings(other.mReadRefStrings) {
+    }
+
+    inline MemStream& GetStream() {
+        return mStream;
+    }
 
     void SetOptions(const bool verifyTypeInfo = false, const bool refStrings = false) {
         mVerifyTypesInfo = verifyTypeInfo;
@@ -84,7 +103,7 @@ public:
             return false;
         }
 
-        CharString type = mStream.ReadStringZ();
+        mStream.ReadStringZ();
         return true;
     }
 
@@ -122,10 +141,11 @@ public:
     void ReadStructArray(const CharString& memberName, MyArray<T>& v) {
         if (mVerifyTypesInfo) {
             this->VerifyTypeInfo(memberName, "array");
-            CharString& sectionName = this->BeginSection();
+            const CharString& sectionName = this->BeginSection();
             assert(sectionName == memberName);
             this->VerifyTypeInfo("count", MetroTypeGetAlias<uint32_t>());
         }
+
         uint32_t arraySize;
         (*this) >> arraySize;
         if (arraySize > 0) {
@@ -207,12 +227,12 @@ public:
 
 
 #define IMPLEMENT_TYPE_ARRAY_READ(type)     \
-    void operator >>(MyArray<type>& v) {      \
+    void operator >>(MyArray<type>& v) {    \
         uint32_t numElements = 0;           \
-        (*this) >> numElements;               \
+        (*this) >> numElements;             \
         v.resize(numElements);              \
         for (type& e : v) {                 \
-            (*this) >> e;                     \
+            (*this) >> e;                   \
         }                                   \
     }
 

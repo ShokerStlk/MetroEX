@@ -88,11 +88,11 @@ public:
 struct MetroBinFlags {
     static const uint8_t None           =   0;
     static const uint8_t HasDebugInfo   =   1;
-    static const uint8_t Unknown_2      =   2;
+    static const uint8_t Editor         =   2;
     static const uint8_t RefStrings     =   4;
-    static const uint8_t Unknown_8      =   8;
-    static const uint8_t Unknown_16     =   16;
-    static const uint8_t Unknown_32     =   32;
+    static const uint8_t Plain          =   8;
+    static const uint8_t NoSections     =   16;
+    static const uint8_t MultiChunk     =   32;
 };
 
 

@@ -103,6 +103,18 @@ struct MetroTextureInfo {
     void Serialize(MetroReflectionReader& s);
 };
 
+struct MetroTextureAliasInfo {
+    uint32_t    unknown0;   // always 0 ???
+    uint32_t    unknown1;   // always 9 ???
+    uint8_t     flags;      // always 4 ???
+    RefString   name;
+    RefString   alias;
+
+    void Serialize(MetroReflectionReader& s);
+};
+
+class MetroReflectionReader;
+
 class MetroTexturesDatabase {
 public:
     MetroTexturesDatabase();

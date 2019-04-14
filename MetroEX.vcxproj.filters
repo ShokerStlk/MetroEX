@@ -79,6 +79,8 @@
     <ClCompile Include="src\metro\MetroDatabases.h">
       <Filter>src\metro</Filter>
     </ClCompile>
+    <ClCompile Include="src\metro\MetroBinArchive.cpp" />
+    <ClCompile Include="src\metro\MetroBinArrayArchive.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ui\RenderPanel.h">
@@ -165,6 +167,10 @@
     <ClInclude Include="src\metro\MetroConfigNames.h">
       <Filter>src\metro</Filter>
     </ClInclude>
+    <ClInclude Include="src\metro\MetroBinArchive.h" />
+    <ClInclude Include="src\metro\MetroBinArrayArchive.h" />
+    <ClInclude Include="src\metro\MetroBinTemplateEngine.h" />
+    <ClInclude Include="src\metro\MetroBinIArchive.h" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="src\ui\ImagePanel.resx" />

@@ -1,16 +1,11 @@
 #include "MetroTexturesDatabase.h"
 #include "MetroReflection.h"
 #include "MetroTypes.h"
+#include "MetroBinArrayArchive.h"
+#include "MetroBinArchive.h"
 
 
 void MetroTextureInfo::Serialize(MetroReflectionReader& s) {
-    METRO_READ_MEMBER_NO_VERIFY(s, name);
-    METRO_READ_MEMBER_NO_VERIFY(s, flags);
-
-    const bool hasDebugInfo = TestBit(flags, MetroBinFlags::HasDebugInfo);
-    const bool stringsAsRef = TestBit(flags, MetroBinFlags::RefStrings);
-    s.SetOptions(hasDebugInfo, stringsAsRef);
-
     METRO_READ_MEMBER(s, type);
     METRO_READ_MEMBER(s, texture_type);
     METRO_READ_MEMBER(s, source_name);
@@ -57,10 +52,16 @@ void MetroTextureInfo::Serialize(MetroReflectionReader& s) {
     METRO_READ_MEMBER_CHOOSE(s, aux5_name);
     METRO_READ_MEMBER_CHOOSE(s, aux6_name);
     METRO_READ_MEMBER_CHOOSE(s, aux7_name);
-
-    s.SetOptions();
 }
 
+void MetroTextureAliasInfo::Serialize(MetroReflectionReader & s)
+{
+    METRO_READ_MEMBER(s, unknown0); // always 0 ???
+    METRO_READ_MEMBER(s, unknown1); // always 9 ???
+    METRO_READ_MEMBER(s, flags);    // always 4 ???
+    METRO_READ_MEMBER(s, name);
+    METRO_READ_MEMBER(s, alias);
+}
 
 MetroTexturesDatabase::MetroTexturesDatabase() {
 
@@ -70,22 +71,23 @@ MetroTexturesDatabase::~MetroTexturesDatabase() {
 }
 
 bool MetroTexturesDatabase::LoadFromData(MemStream& stream) {
-    size_t numEntries = stream.ReadTyped<uint32_t>();
-    if (numEntries == 0x52455641) { // AVER
-        stream.SkipBytes(2);
-        numEntries = stream.ReadTyped<uint32_t>();
-    }
+    MetroBinArrayArchive binArchive("textures_handles_storage.bin", stream, MakeFourcc<'A','V','E','R'>());
+
+    const size_t numEntries = binArchive.GetBinCnt();
 
     mDatabase.reserve(numEntries);
     mPool.resize(numEntries);
 
     for (size_t i = 0; i < numEntries; ++i) {
-        const size_t idx = stream.ReadTyped<uint32_t>();
-        const size_t size = stream.ReadTyped<uint32_t>();
-
-        MetroReflectionReader reader(stream.Substream(size));
+        const MetroBinArrayArchive::ChunkData& chunk = binArchive.GetChunkByIdx(i);
+        const MetroBinArchive& bin = chunk.GetBinArchive();
+        assert(bin.HasChunks() == false);
+        
+        MetroReflectionReader reader = bin.ReturnReflectionReader(bin.GetOffsetFirstDataBegin());
 
         MetroTextureInfo* texInfo = &mPool[i];
+        texInfo->name   = bin.GetFileName();
+        texInfo->flags  = bin.GetFlags();
         reader >> *texInfo;
 
         HashString hashStr(texInfo->name);
@@ -97,64 +99,31 @@ bool MetroTexturesDatabase::LoadFromData(MemStream& stream) {
         } else if (texInfo->texture_type == scast<uint8_t>(MetroTextureInfo::TextureType::Normalmap)) {
             mNormalmapTextures.insert({ hashStr, texInfo });
         }
-
-        stream.SkipBytes(size);
     }
 
     return true;
 }
 
-PACKED_STRUCT_BEGIN
-struct TextureAlias {
-    uint32_t    unknown0;   // always 0 ???
-    uint32_t    unknown1;   // always 9 ???
-    uint8_t     flags;      // always 4 ???
-    uint32_t    name;
-    uint32_t    alias;
-} PACKED_STRUCT_END;
-
 bool MetroTexturesDatabase::LoadAliasesFromData(MemStream& stream) {
-    bool result = false;
+    MetroBinArchive bin("texture_aliases.bin", stream, MetroBinArchive::kHeaderDoAutoSearch);
 
-    const size_t flags = stream.ReadTyped<uint8_t>();
-    if (flags != 4) {
-        return false;
-    }
+    assert(bin.HasRefStrings());
+    StringArray strings = bin.ReadStringTable();
 
-    // Bindings chunk
-    size_t chunkId = stream.ReadTyped<uint32_t>();
-    size_t chunkSize = stream.ReadTyped<uint32_t>();
-    size_t chunkEnd = stream.GetCursor() + chunkSize;
+    const size_t dataOffset = bin.GetFirstChunk().GetChunkDataOffset();
+    MetroReflectionReader reader = bin.ReturnReflectionReader(dataOffset);
 
-    if (chunkId != 1) { // pairs
-        return false;
-    }
+    reader.GetStream().SkipBytes(9); // skip unkn data
 
-    stream.SkipBytes(9);
-    const size_t numAliases = stream.ReadTyped<uint32_t>();
-
-    MyArray<TextureAlias> aliases(numAliases);
-    stream.ReadToBuffer(aliases.data(), numAliases * sizeof(TextureAlias));
-
-    stream.SetCursor(chunkEnd);
-
-    // strings chunk
-    chunkId = stream.ReadTyped<uint32_t>();
-    chunkSize = stream.ReadTyped<uint32_t>();
-
-    if (chunkId != 2) { // strings
-        return false;
-    }
-
-    const size_t numStrings = stream.ReadTyped<uint32_t>();
-    MyArray<CharString> strings(numStrings);
-    for (CharString& s : strings) {
-        s = stream.ReadStringZ();
-    }
-
+    uint32_t numAliases = 0;
+    METRO_READ_MEMBER(reader, numAliases);
     mAliases.reserve(numAliases);
-    for (const TextureAlias& ta : aliases) {
-        mAliases.insert({ HashString(strings[ta.name]), HashString(strings[ta.alias]) });
+
+    for (size_t i = 0; i < scast<size_t>(numAliases); ++i) {
+        MetroTextureAliasInfo texAliasInfo;
+        reader >> texAliasInfo;
+
+        mAliases.insert({ HashString(strings[texAliasInfo.name.ref]), HashString(strings[texAliasInfo.alias.ref]) });
     }
 
     return true;

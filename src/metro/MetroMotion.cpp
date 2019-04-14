@@ -98,8 +98,16 @@ bool MetroMotion::LoadFromData(MemStream& stream) {
     return result;
 }
 
+void MetroMotion::SetPath(const CharString& path) {
+    mPath = path;
+}
+
 const CharString& MetroMotion::GetName() const {
     return mName;
+}
+
+const CharString& MetroMotion::GetPath() const {
+    return mPath;
 }
 
 size_t MetroMotion::GetBonesCRC() const {

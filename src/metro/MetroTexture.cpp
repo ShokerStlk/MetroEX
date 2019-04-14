@@ -1,5 +1,5 @@
 #include "MetroTexture.h"
-#include "lz4.h"
+#include "MetroCompression.h"
 #include "dds_utils.h"
 
 #define STBI_WRITE_NO_STDIO
@@ -8,7 +8,35 @@
 #include "stb_image_write.h"
 #pragma warning (default : 4793)
 
+#define STB_IMAGE_IMPLEMENTATION
+#define STBI_NO_STDIO
+#define STBI_NO_JPEG
+#define STBI_NO_BMP
+#define STBI_NO_PSD
+#define STBI_NO_GIF
+#define STBI_NO_HDR
+#define STBI_NO_PIC
+#define STBI_NO_PNM
+#include "stb_image.h"
+
+#define STB_IMAGE_RESIZE_IMPLEMENTATION
+#include "stb_image_resize.h"
+
 #include <fstream>
+#include <intrin.h>
+
+
+
+static size_t NumMipsFromResolution(const size_t resolution) {
+    size_t result = 0;
+
+    unsigned long index;
+    if (_BitScanReverse64(&index, resolution)) {
+        result = static_cast<size_t>(index) + 1;
+    }
+
+    return result;
+}
 
 
 MetroTexture::MetroTexture()
@@ -32,7 +60,6 @@ bool MetroTexture::LoadFromData(MemStream& stream, const CharString& name) {
 
     if (*rcast<const uint32_t*>(data) == cDDSFileSignature) {
         // this is a plain DDS file
-        MemStream stream(data, length);
         stream.SkipBytes(4); // skip DDS magic
 
         DDSURFACEDESC2 ddsHdr;
@@ -90,8 +117,8 @@ bool MetroTexture::LoadFromData(MemStream& stream, const CharString& name) {
         if (dimension > 0) {
             const size_t bc7size = DDS_GetCompressedSizeBC7(dimension, dimension, numMips);
             mData.resize(bc7size);
-            const int lz4Result = LZ4_decompress_safe(rcast<const char*>(data), rcast<char*>(mData.data()), scast<int>(length), scast<int>(bc7size));
-            if (lz4Result != scast<int>(bc7size)) {
+            const size_t uresult = MetroCompression::DecompressBlob(data, length, mData.data(), bc7size);
+            if (uresult != bc7size) {
                 mData.resize(0);
             } else {
                 mWidth = dimension;
@@ -99,6 +126,44 @@ bool MetroTexture::LoadFromData(MemStream& stream, const CharString& name) {
                 mDepth = 1;
                 mNumMips = numMips;
                 mFormat = TextureFormat::BC7;
+
+                result = true;
+            }
+        }
+    }
+
+    return result;
+}
+
+bool MetroTexture::LoadFromFile(const fs::path& fileName) {
+    bool result = false;
+
+    const std::wstring ext = fileName.extension().native();
+    if (ext == L".tga" || ext == L".png") {
+        std::ifstream file(fileName, std::ifstream::binary);
+        if (file.good()) {
+            BytesArray fileData;
+
+            file.seekg(0, std::ios::end);
+            fileData.resize(file.tellg());
+            file.seekg(0, std::ios::beg);
+            file.read(rcast<char*>(fileData.data()), fileData.size());
+            file.close();
+
+            int width, height, bpp;
+            uint8_t* pixels = stbi_load_from_memory(fileData.data(), scast<int>(fileData.size()), &width, &height, &bpp, STBI_rgb_alpha);
+            fileData.resize(0);
+            if (pixels) {
+                mData.resize(width * height * 4);
+                memcpy(mData.data(), pixels, mData.size());
+
+                stbi_image_free(pixels);
+
+                mWidth = scast<size_t>(width);
+                mHeight = scast<size_t>(height);
+                mDepth = 1;
+                mNumMips = 1;
+                mFormat = TextureFormat::RGBA;
 
                 result = true;
             }
@@ -203,6 +268,104 @@ bool MetroTexture::SaveAsPNG(const fs::path& filePath) {
     }
 
     return result;
+}
+
+bool MetroTexture::SaveAsMetroTexture(const fs::path& filePath) {
+    bool result = false;
+
+    size_t resolution = scast<size_t>(mWidth);
+
+    BytesArray mipBuffer = mData;
+    BytesArray nextMipBuffer; nextMipBuffer.resize(mipBuffer.size() / 4);
+
+    if (resolution == 2048) {
+        std::ofstream file(filePath.native() + L".2048", std::ofstream::binary);
+        if (file.good()) {
+            const size_t bc7Size = DDS_GetCompressedSizeBC7(resolution, resolution, 1);
+            BytesArray bc7Buffer;
+            bc7Buffer.resize(bc7Size);
+
+            DDS_CompressBC7(mipBuffer.data(), bc7Buffer.data(), resolution, resolution);
+
+            BytesArray lz4Buffer;
+            MetroCompression::CompressBlob(bc7Buffer.data(), bc7Size, lz4Buffer);
+
+            file.write(rcast<const char*>(lz4Buffer.data()), lz4Buffer.size());
+            file.flush();
+            file.close();
+        }
+
+        stbir_resize_uint8(mipBuffer.data(), scast<int>(resolution), scast<int>(resolution), 0,
+                           nextMipBuffer.data(), scast<int>(resolution / 2), scast<int>(resolution / 2), 0, 4);
+
+        resolution /= 2;
+        mipBuffer = nextMipBuffer;
+    }
+
+    if (resolution == 1024) {
+        std::ofstream file(filePath.native() + L".1024", std::ofstream::binary);
+        if (file.good()) {
+            const size_t bc7Size = DDS_GetCompressedSizeBC7(resolution, resolution, 1);
+            BytesArray bc7Buffer;
+            bc7Buffer.resize(bc7Size);
+
+            DDS_CompressBC7(mipBuffer.data(), bc7Buffer.data(), resolution, resolution);
+
+            BytesArray lz4Buffer;
+            MetroCompression::CompressBlob(bc7Buffer.data(), bc7Size, lz4Buffer);
+
+            file.write(rcast<const char*>(lz4Buffer.data()), lz4Buffer.size());
+            file.flush();
+            file.close();
+        }
+
+        stbir_resize_uint8(mipBuffer.data(), scast<int>(resolution), scast<int>(resolution), 0,
+                           nextMipBuffer.data(), scast<int>(resolution / 2), scast<int>(resolution / 2), 0, 4);
+
+        resolution /= 2;
+        mipBuffer = nextMipBuffer;
+    }
+
+    if (resolution == 512) {
+        std::ofstream file(filePath.native() + L".512", std::ofstream::binary);
+        if (file.good()) {
+            const size_t bc7Size = DDS_GetCompressedSizeBC7(resolution, resolution, 10);
+            BytesArray bc7Buffer;
+            bc7Buffer.resize(bc7Size);
+
+            uint8_t* bufferA = mipBuffer.data();
+            uint8_t* bufferB = nextMipBuffer.data();
+
+            uint8_t* bc7Blocks = bc7Buffer.data();
+            size_t mipResolution = resolution;
+            for (size_t i = 0; i < 10; ++i) {
+                DDS_CompressBC7(bufferA, bc7Blocks, mipResolution, mipResolution);
+
+                const size_t mipSize = DDS_GetCompressedSizeBC7(mipResolution, mipResolution, 1);
+                bc7Blocks += mipSize;
+
+                const size_t nextResolution = std::max<size_t>(4, mipResolution / 2);
+                if (nextResolution != resolution) { //mip size changed - resample
+                    stbir_resize_uint8(bufferA, scast<int>(mipResolution), scast<int>(mipResolution), 0,
+                                       bufferB, scast<int>(nextResolution), scast<int>(nextResolution), 0, 4);
+
+                    std::swap(bufferA, bufferB);
+                }
+                mipResolution = nextResolution;
+            }
+
+            BytesArray lz4Buffer;
+            MetroCompression::CompressBlob(bc7Buffer.data(), bc7Size, lz4Buffer);
+
+            file.write(rcast<const char*>(lz4Buffer.data()), lz4Buffer.size());
+            file.flush();
+            file.close();
+
+            result = true;
+        }
+    }
+
+    return false;
 }
 
 bool MetroTexture::IsCubemap() const {

@@ -1,12 +1,9 @@
 #include "VFXReader.h"
+#include "MetroCompression.h"
+
 #include <fstream>
 
-#define LZ4_DISABLE_DEPRECATE_WARNINGS
-#include "lz4.h"
-
-
 static const size_t kVFXVersionExodus   = 3;
-static const size_t kVFXCompressionLZ4  = 1;
 
 VFXReader::VFXReader() {
 
@@ -19,7 +16,7 @@ VFXReader::~VFXReader() {
 bool VFXReader::LoadFromFile(const fs::path& filePath) {
     bool result = false;
 
-    LogPrint(LogLevel::Info, "Loading vfx file...");
+    LogPrint(LogLevel::Info, "loading vfx file...");
 
     std::ifstream file(filePath, std::ifstream::binary);
     if (file.good()) {
@@ -55,24 +52,28 @@ bool VFXReader::LoadFromFile(const fs::path& filePath) {
         const size_t version = stream.ReadTyped<uint32_t>();
         const size_t compressionType = stream.ReadTyped<uint32_t>();
 
-        LogPrint(LogLevel::Info, "version = " + std::to_string(version) + ", compression = " + std::to_string(compressionType));
+        LogPrint(LogLevel::Info, "vfx version = " + std::to_string(version) + ", compression = " + std::to_string(compressionType));
 
-        if (version == kVFXVersionExodus && compressionType == kVFXCompressionLZ4) { // Metro Exodus and LZ4
+        if (version == kVFXVersionExodus && compressionType == MetroCompression::Type_LZ4) { // Metro Exodus and LZ4
             mContentVersion = stream.ReadStringZ();
-            stream.SkipBytes(16); // guid, seems to be static across the game
+            stream.ReadStruct(mGUID); // guid, seems to be static across the game
             const size_t numVFS = stream.ReadTyped<uint32_t>();
             const size_t numFiles = stream.ReadTyped<uint32_t>();
             const size_t unknown_0 = stream.ReadTyped<uint32_t>();
 
-            LogPrint(LogLevel::Info, "content version = " + mContentVersion + ", packages = " + std::to_string(numVFS) + ", files = " + std::to_string(numFiles));
+            LogPrint(LogLevel::Info, "vfx content version = " + mContentVersion);
+            LogPrintF(LogLevel::Info, "vfx guid = %08x-%04x-%04x-%04x-%02x%02x%02x%02x%02x%02x",
+                mGUID.a, mGUID.b, mGUID.c, mGUID.d, mGUID.e[0], mGUID.e[1], mGUID.e[2], mGUID.e[3], mGUID.e[4], mGUID.e[5]);
+
+            LogPrintF(LogLevel::Info, "packages = %lld, files = %lld", numVFS, numFiles);
 
             mPaks.resize(numVFS);
             for (Pak& pak : mPaks) {
                 pak.name = stream.ReadStringZ();
 
                 const uint32_t numStrings = stream.ReadTyped<uint32_t>();
-                pak.someStrings.resize(numStrings);
-                for (auto& s : pak.someStrings) {
+                pak.levels.resize(numStrings);
+                for (auto& s : pak.levels) {
                     s = stream.ReadStringZ();
                 }
 
@@ -106,12 +107,12 @@ bool VFXReader::LoadFromFile(const fs::path& filePath) {
             mFileName = filePath.filename().string();
             result = true;
 
-            LogPrint(LogLevel::Info, "VFX loaded successfully");
+            LogPrint(LogLevel::Info, "vfx loaded successfully");
         } else {
-            LogPrint(LogLevel::Error, "Unknown version or compression");
+            LogPrint(LogLevel::Error, "unknown version or compression");
         }
     } else {
-        LogPrint(LogLevel::Error, "Failed to open file");
+        LogPrint(LogLevel::Error, "failed to open file");
     }
 
     return result;
@@ -138,7 +139,7 @@ MemStream VFXReader::ExtractFile(const size_t fileIdx, const size_t subOffset, c
             result = MemStream(fileContent, mf.sizeUncompressed, true);
         } else {
             uint8_t* uncompressedContent = rcast<uint8_t*>(malloc(mf.sizeUncompressed));
-            const size_t decompressResult = this->Decompress(fileContent, mf.sizeCompressed, uncompressedContent, mf.sizeUncompressed);
+            const size_t decompressResult = MetroCompression::DecompressStream(fileContent, mf.sizeCompressed, uncompressedContent, mf.sizeUncompressed);
             if (decompressResult == mf.sizeUncompressed) {
                 result = MemStream(uncompressedContent, mf.sizeUncompressed, true);
             }
@@ -286,36 +287,4 @@ MyArray<size_t> VFXReader::FindFilesInFolder(const CharString& folder, const Cha
     }
 
     return std::move(result);
-}
-
-
-
-size_t VFXReader::Decompress(const void* compressedData, const size_t compressedSize, void* uncompressedData, const size_t uncompressedSize) {
-    size_t result = 0;
-
-    MemStream stream(compressedData, compressedSize);
-    char* dst = rcast<char*>(uncompressedData);
-
-    size_t outCursor = 0;
-    while (!stream.Ended()) {
-        const size_t blockSize = stream.ReadTyped<uint32_t>();
-        const size_t blockUncompressedSize = stream.ReadTyped<uint32_t>();
-
-        const char* src = rcast<const char*>(stream.GetDataAtCursor());
-
-        const int nbRead = LZ4_decompress_fast_withPrefix64k(src, dst + outCursor, scast<int>(blockUncompressedSize));
-        const int nbCompressed = scast<int>(blockSize - 8);
-        if (nbRead < scast<int>(nbCompressed)) {
-            // ooops, error :(
-            return 0;
-        }
-
-        outCursor += blockUncompressedSize;
-
-        stream.SkipBytes(nbCompressed);
-    }
-
-    result = outCursor;
-
-    return result;
 }

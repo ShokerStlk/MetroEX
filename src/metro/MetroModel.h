@@ -21,6 +21,7 @@ public:
     size_t                  GetNumMeshes() const;
     const MetroMesh*        GetMesh(const size_t idx) const;
 
+    const CharString&       GetSkeletonPath() const;
     const MetroSkeleton*    GetSkeleton() const;
     size_t                  GetNumMotions() const;
     const MetroMotion*      GetMotion(const size_t idx) const;
@@ -34,6 +35,7 @@ private:
     AABBox                  mBBox;
     vec4                    mBSphere;
     MyArray<MetroMesh*>     mMeshes;
+    CharString              mSkeletonPath;
     MetroSkeleton*          mSkeleton;
     MyArray<MetroMotion*>   mMotions;
 

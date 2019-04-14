@@ -8,6 +8,7 @@
 #include "RenderPanel.h"
 #include "ImagePanel.h"
 #include "SoundPanel.h"
+#include "DlgModelInfo.h"
 
 class VFXReader;
 class MetroTexturesDatabase;
@@ -77,6 +78,7 @@ namespace MetroEX {
             mImagePanel = nullptr;
             mRenderPanel = nullptr;
             mSoundPanel = nullptr;
+            mDlgModelInfo = nullptr;
             mVFXReader = nullptr;
 
             mExtractionCtx = new FileExtractionCtx;
@@ -98,6 +100,7 @@ namespace MetroEX {
         MetroEX::ImagePanel^        mImagePanel;
         MetroEX::RenderPanel^       mRenderPanel;
         MetroEX::SoundPanel^        mSoundPanel;
+        MetroEX::DlgModelInfo^      mDlgModelInfo;
 
         //
         VFXReader*                  mVFXReader;
@@ -181,6 +184,9 @@ namespace MetroEX {
     private: System::Windows::Forms::Label^  label7;
     private: System::Windows::Forms::Label^  lblMdlPropType;
     private: System::Windows::Forms::Label^  label3;
+private: System::Windows::Forms::ToolStripButton^  toolBtnCreatePatch;
+private: System::Windows::Forms::Button^  btnModelInfo;
+private: System::Windows::Forms::ToolStripButton^  toolBtnConvertTexture;
 
 
 
@@ -218,6 +224,7 @@ namespace MetroEX {
             this->pnlViewers = (gcnew System::Windows::Forms::Panel());
             this->pnlMetaProps = (gcnew System::Windows::Forms::Panel());
             this->pnlMdlProps = (gcnew System::Windows::Forms::Panel());
+            this->btnModelInfo = (gcnew System::Windows::Forms::Button());
             this->btnMdlPropPlayStopAnim = (gcnew System::Windows::Forms::Button());
             this->lstMdlPropMotions = (gcnew System::Windows::Forms::ListBox());
             this->lblMdlPropJoints = (gcnew System::Windows::Forms::Label());
@@ -259,10 +266,12 @@ namespace MetroEX {
             this->toolBtnAbout = (gcnew System::Windows::Forms::ToolStripButton());
             this->toolStripSeparator2 = (gcnew System::Windows::Forms::ToolStripSeparator());
             this->toolBtnImgEnableAlpha = (gcnew System::Windows::Forms::ToolStripButton());
+            this->toolBtnCreatePatch = (gcnew System::Windows::Forms::ToolStripButton());
             this->filterTimer = (gcnew System::Windows::Forms::Timer(this->components));
             this->ctxMenuExportBin = (gcnew System::Windows::Forms::ContextMenuStrip(this->components));
             this->extractBinRootToolStripMenuItem = (gcnew System::Windows::Forms::ToolStripMenuItem());
             this->extractBinChunkToolStripMenuItem = (gcnew System::Windows::Forms::ToolStripMenuItem());
+            this->toolBtnConvertTexture = (gcnew System::Windows::Forms::ToolStripButton());
             this->statusStrip1->SuspendLayout();
             (cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->splitContainer1))->BeginInit();
             this->splitContainer1->Panel1->SuspendLayout();
@@ -439,6 +448,7 @@ namespace MetroEX {
             // 
             // pnlMdlProps
             // 
+            this->pnlMdlProps->Controls->Add(this->btnModelInfo);
             this->pnlMdlProps->Controls->Add(this->btnMdlPropPlayStopAnim);
             this->pnlMdlProps->Controls->Add(this->lstMdlPropMotions);
             this->pnlMdlProps->Controls->Add(this->lblMdlPropJoints);
@@ -454,9 +464,19 @@ namespace MetroEX {
             this->pnlMdlProps->Size = System::Drawing::Size(623, 73);
             this->pnlMdlProps->TabIndex = 1;
             // 
+            // btnModelInfo
+            // 
+            this->btnModelInfo->Location = System::Drawing::Point(481, 47);
+            this->btnModelInfo->Name = L"btnModelInfo";
+            this->btnModelInfo->Size = System::Drawing::Size(75, 23);
+            this->btnModelInfo->TabIndex = 10;
+            this->btnModelInfo->Text = L"Info";
+            this->btnModelInfo->UseVisualStyleBackColor = true;
+            this->btnModelInfo->Click += gcnew System::EventHandler(this, &MainForm::btnModelInfo_Click);
+            // 
             // btnMdlPropPlayStopAnim
             // 
-            this->btnMdlPropPlayStopAnim->Location = System::Drawing::Point(497, 21);
+            this->btnMdlPropPlayStopAnim->Location = System::Drawing::Point(480, 5);
             this->btnMdlPropPlayStopAnim->Name = L"btnMdlPropPlayStopAnim";
             this->btnMdlPropPlayStopAnim->Size = System::Drawing::Size(75, 23);
             this->btnMdlPropPlayStopAnim->TabIndex = 9;
@@ -755,9 +775,10 @@ namespace MetroEX {
             // toolStrip1
             // 
             this->toolStrip1->GripStyle = System::Windows::Forms::ToolStripGripStyle::Hidden;
-            this->toolStrip1->Items->AddRange(gcnew cli::array< System::Windows::Forms::ToolStripItem^  >(5) {
+            this->toolStrip1->Items->AddRange(gcnew cli::array< System::Windows::Forms::ToolStripItem^  >(7) {
                 this->toolBtnFileOpen,
-                    this->toolStripSeparator1, this->toolBtnAbout, this->toolStripSeparator2, this->toolBtnImgEnableAlpha
+                    this->toolStripSeparator1, this->toolBtnAbout, this->toolStripSeparator2, this->toolBtnImgEnableAlpha, this->toolBtnCreatePatch,
+                    this->toolBtnConvertTexture
             });
             this->toolStrip1->Location = System::Drawing::Point(0, 0);
             this->toolStrip1->Name = L"toolStrip1";
@@ -809,6 +830,16 @@ namespace MetroEX {
             this->toolBtnImgEnableAlpha->ToolTipText = L"Enable alpha";
             this->toolBtnImgEnableAlpha->Click += gcnew System::EventHandler(this, &MainForm::toolBtnImgEnableAlpha_Click);
             // 
+            // toolBtnCreatePatch
+            // 
+            this->toolBtnCreatePatch->DisplayStyle = System::Windows::Forms::ToolStripItemDisplayStyle::Image;
+            this->toolBtnCreatePatch->Image = (cli::safe_cast<System::Drawing::Image^>(resources->GetObject(L"toolBtnCreatePatch.Image")));
+            this->toolBtnCreatePatch->ImageTransparentColor = System::Drawing::Color::Magenta;
+            this->toolBtnCreatePatch->Name = L"toolBtnCreatePatch";
+            this->toolBtnCreatePatch->Size = System::Drawing::Size(23, 22);
+            this->toolBtnCreatePatch->Text = L"Create patch";
+            this->toolBtnCreatePatch->Click += gcnew System::EventHandler(this, &MainForm::toolBtnCreatePatch_Click);
+            // 
             // filterTimer
             // 
             this->filterTimer->Interval = 1000;
@@ -837,6 +868,16 @@ namespace MetroEX {
             this->extractBinChunkToolStripMenuItem->Size = System::Drawing::Size(162, 22);
             this->extractBinChunkToolStripMenuItem->Text = L"Extract this file...";
             this->extractBinChunkToolStripMenuItem->Click += gcnew System::EventHandler(this, &MainForm::extractBinChunkToolStripMenuItem_Click);
+            // 
+            // toolBtnConvertTexture
+            // 
+            this->toolBtnConvertTexture->DisplayStyle = System::Windows::Forms::ToolStripItemDisplayStyle::Image;
+            this->toolBtnConvertTexture->Image = (cli::safe_cast<System::Drawing::Image^>(resources->GetObject(L"toolBtnConvertTexture.Image")));
+            this->toolBtnConvertTexture->ImageTransparentColor = System::Drawing::Color::Magenta;
+            this->toolBtnConvertTexture->Name = L"toolBtnConvertTexture";
+            this->toolBtnConvertTexture->Size = System::Drawing::Size(23, 22);
+            this->toolBtnConvertTexture->ToolTipText = L"Convert texture to Metro format";
+            this->toolBtnConvertTexture->Click += gcnew System::EventHandler(this, &MainForm::toolBtnConvertTexture_Click);
             // 
             // MainForm
             // 
@@ -937,5 +978,11 @@ namespace MetroEX {
         // model props
         void lstMdlPropMotions_SelectedIndexChanged(System::Object^ sender, System::EventArgs^ e);
         void btnMdlPropPlayStopAnim_Click(System::Object^ sender, System::EventArgs^ e);
+        void btnModelInfo_Click(System::Object^ sender, System::EventArgs^ e);
+        void OnDlgModelInfo_Closed(System::Object^ sender, System::EventArgs^ e);
+
+        // patch creation
+        void toolBtnCreatePatch_Click(System::Object^ sender, System::EventArgs^ e);
+        void toolBtnConvertTexture_Click(System::Object^ sender, System::EventArgs^ e);
     };
 }

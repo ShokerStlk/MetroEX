@@ -37,14 +37,20 @@ static const size_t kMetroModelMaxMaterials = 4;
 
 PACKED_STRUCT_BEGIN
 struct MdlHeader {          // size = 64
+    enum : uint32_t {
+        Flag_ModelIsDraft = 1
+    };
+
     uint8_t     version;
     uint8_t     type;
-    uint16_t    index;
+    uint16_t    shaderId;
     AABBox      bbox;
     vec4        bsphere;
     uint32_t    checkSum;
+    float       invLod;
     uint32_t    flags;
-    vec3        scales;
+    float       vscale;
+    float       texelDensity;
 } PACKED_STRUCT_END;
 
 PACKED_STRUCT_BEGIN
@@ -661,6 +667,10 @@ const MetroMesh* MetroModel::GetMesh(const size_t idx) const {
     return mMeshes[idx];
 }
 
+const CharString& MetroModel::GetSkeletonPath() const {
+    return mSkeletonPath;
+}
+
 const MetroSkeleton* MetroModel::GetSkeleton() const {
     return mSkeleton;
 }
@@ -709,15 +719,15 @@ void MetroModel::ReadSubChunks(MemStream& stream) {
                 MdlHeader hdr;
                 stream.ReadStruct(hdr);
 
-                if (hdr.scales.y <= MM_Epsilon) {
-                    hdr.scales.y = 1.0f;
+                if (hdr.vscale <= MM_Epsilon) {
+                    hdr.vscale = 1.0f;
                 }
 
                 if (mCurrentMesh) {
-                    mCurrentMesh->scales = hdr.scales;
+                    mCurrentMesh->vscale = hdr.vscale;
                     mCurrentMesh->bbox = hdr.bbox;
                     mCurrentMesh->type = hdr.type;
-                    mCurrentMesh->idx = hdr.index;
+                    mCurrentMesh->shaderId = hdr.shaderId;
                 } else {
                     mBBox = hdr.bbox;
                     mBSphere = hdr.bsphere;
@@ -750,7 +760,7 @@ void MetroModel::ReadSubChunks(MemStream& stream) {
 
                     for (size_t i = 0; i < numVertices; ++i) {
                         *dstVerts = ConvertVertex(*srcVerts);
-                        dstVerts->pos *= mCurrentMesh->scales.y;
+                        dstVerts->pos *= mCurrentMesh->vscale;
                         ++srcVerts;
                         ++dstVerts;
                     }
@@ -780,7 +790,7 @@ void MetroModel::ReadSubChunks(MemStream& stream) {
 
                     for (size_t i = 0; i < numVertices; ++i) {
                         *dstVerts = ConvertVertex(*srcVerts);
-                        dstVerts->pos *= mCurrentMesh->scales.y;
+                        dstVerts->pos *= mCurrentMesh->vscale;
                         RemapBones(*dstVerts, mCurrentMesh->bonesRemap);
 
                         ++srcVerts;
@@ -846,8 +856,8 @@ void MetroModel::ReadSubChunks(MemStream& stream) {
 
             case MC_SkeletonLink: {
                 CharString skeletonRef = stream.ReadStringZ();
-                CharString skelFilePath = "content\\meshes\\" + skeletonRef + ".skeleton.bin";
-                const size_t fileIdx = mVFXReader->FindFile(skelFilePath);
+                mSkeletonPath = "content\\meshes\\" + skeletonRef + ".skeleton.bin";
+                const size_t fileIdx = mVFXReader->FindFile(mSkeletonPath);
                 if (MetroFile::InvalidFileIdx != fileIdx) {
                     MemStream stream = mVFXReader->ExtractFile(fileIdx);
                     if (stream) {
@@ -908,16 +918,23 @@ void MetroModel::LoadMotions() {
     MyArray<size_t> motionFiles;
 
     StringArray motionFolders = SplitString(motionsStr, ',');
+    StringArray motionPaths;
     for (const CharString& f : motionFolders) {
         CharString fullFolderPath = "content\\motions\\" + f + "\\";
 
         const auto& v = mVFXReader->FindFilesInFolder(fullFolderPath, ".m2");
+
+        for (const size_t idx : v) {
+            motionPaths.push_back(fullFolderPath + mVFXReader->GetFile(idx).name);
+        }
+
         motionFiles.insert(motionFiles.end(), v.begin(), v.end());
     }
 
     const size_t numBones = mSkeleton->GetNumBones();
 
     mMotions.reserve(motionFiles.size());
+    size_t i = 0;
     for (const size_t idx : motionFiles) {
         MemStream stream = mVFXReader->ExtractFile(idx);
         if (stream) {
@@ -925,11 +942,13 @@ void MetroModel::LoadMotions() {
             CharString motionName = fs::path(mf.name).stem().u8string();
 
             MetroMotion* motion = new MetroMotion(motionName);
+            motion->SetPath(motionPaths[i]);
             if (motion->LoadFromData(stream) && motion->GetNumBones() == numBones) {
                 mMotions.push_back(motion);
             } else {
                 MySafeDelete(motion);
             }
         }
+        ++i;
     }
 }

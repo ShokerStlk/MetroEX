@@ -114,7 +114,7 @@ void MetroLevel::ReadLevelGeometry(MemStream& stream, const MyArray<GeomObjectIn
     MyArray<MetroMesh*> meshes(infos.size());
     for (MetroMesh*& m : meshes) {
         m = new MetroMesh();
-        m->scales = vec3(1.0f);
+        m->vscale = 1.0f;
     }
 
     const size_t numMeshes = meshes.size();

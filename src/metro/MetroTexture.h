@@ -14,10 +14,13 @@ public:
     ~MetroTexture();
 
     bool            LoadFromData(MemStream& stream, const CharString& name);
+    bool            LoadFromFile(const fs::path& fileName);
+
     bool            SaveAsDDS(const fs::path& filePath);
     bool            SaveAsLegacyDDS(const fs::path& filePath);
     bool            SaveAsTGA(const fs::path& filePath);
     bool            SaveAsPNG(const fs::path& filePath);
+    bool            SaveAsMetroTexture(const fs::path& filePath);
 
     bool            IsCubemap() const;
     size_t          GetWidth() const;

@@ -5,6 +5,7 @@
 #include "metro/MetroSound.h"
 #include "metro/MetroSkeleton.h"
 #include "metro/MetroMotion.h"
+#include "metro/MetroPatchTool.h"
 
 #include <fstream>
 
@@ -731,6 +732,10 @@ namespace MetroEX {
                 this->lblMdlPropTriangles->Text = numTriangles.ToString();
 
                 this->btnMdlPropPlayStopAnim->Text = L"Play";
+
+                if (mDlgModelInfo) {
+                    mDlgModelInfo->SetModel(mdl);
+                }
             } else {
                 MySafeDelete(mdl);
             }
@@ -1243,5 +1248,63 @@ namespace MetroEX {
         mRenderPanel->PlayAnim(!mRenderPanel->IsPlayingAnim());
 
         this->btnMdlPropPlayStopAnim->Text = mRenderPanel->IsPlayingAnim() ? L"Stop" : L"Play";
+    }
+
+    void MainForm::btnModelInfo_Click(System::Object^ sender, System::EventArgs^ e) {
+        if (!mDlgModelInfo) {
+            mDlgModelInfo = gcnew MetroEX::DlgModelInfo();
+            mDlgModelInfo->Closed += gcnew System::EventHandler(this, &MetroEX::MainForm::OnDlgModelInfo_Closed);
+
+            mDlgModelInfo->Icon = this->Icon;
+            mDlgModelInfo->SetModel(mRenderPanel->GetModel());
+            mDlgModelInfo->Show();
+        }
+    }
+
+    void MainForm::OnDlgModelInfo_Closed(System::Object^, System::EventArgs^) {
+        MySafeDelete(mDlgModelInfo);
+    }
+
+    // patch creation
+    void MainForm::toolBtnCreatePatch_Click(System::Object^ sender, System::EventArgs^ e) {
+        fs::path folderPath = ChooseFolderDialog::ChooseFolder("Choose content directory...", this->Handle.ToPointer());
+        if (!folderPath.empty()) {
+            SaveFileDialog sfd;
+            sfd.Title = L"Save patch archive...";
+            sfd.Filter = L"VFX files (*.vfx)|*.vfx";
+            sfd.FileName = L"patch_00.vfx";
+            sfd.RestoreDirectory = true;
+            sfd.OverwritePrompt = true;
+
+            if (sfd.ShowDialog(this) == System::Windows::Forms::DialogResult::OK) {
+                MetroPatchTool tool;
+                tool.CreatePatchFromFolder(folderPath, StringToPath(sfd.FileName));
+            }
+        }
+    }
+
+    void MainForm::toolBtnConvertTexture_Click(System::Object^ sender, System::EventArgs^ e) {
+        OpenFileDialog ofd;
+        ofd.Title = L"Open image file...";
+        ofd.Filter = L"Image files (*.tga;*.png)|*.tga;*.png";
+        ofd.FilterIndex = 0;
+        ofd.RestoreDirectory = true;
+        if (ofd.ShowDialog(this) == System::Windows::Forms::DialogResult::OK) {
+            fs::path inputPath = StringToPath(ofd.FileName);
+            MetroTexture texture;
+            if (texture.LoadFromFile(inputPath)) {
+                SaveFileDialog sfd;
+                sfd.Title = L"Save file...";
+                sfd.Filter = L"All files (*.*)|*.*";
+                sfd.FileName = PathToString(inputPath.stem());
+                sfd.RestoreDirectory = true;
+                sfd.OverwritePrompt = true;
+
+                if (sfd.ShowDialog(this) == System::Windows::Forms::DialogResult::OK) {
+                    fs::path outPath = StringToPath(sfd.FileName);
+                    texture.SaveAsMetroTexture(outPath);
+                }
+            }
+        }
     }
 }

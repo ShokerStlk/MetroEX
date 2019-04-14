@@ -3,7 +3,7 @@
 
 struct Pak {
     CharString      name;
-    StringArray     someStrings;
+    StringArray     levels;
     size_t          chunk;
     MyArray<size_t> files;
 };
@@ -30,9 +30,8 @@ public:
     MyArray<size_t>     FindFilesInFolder(const CharString& folder, const CharString& extension, const bool withSubfolders = true);
 
 private:
-    size_t              Decompress(const void* compressedData, const size_t compressedSize, void* uncompressedData, const size_t uncompressedSize);
-
     CharString          mContentVersion;
+    MetroGuid           mGUID;
     CharString          mFileName;
     fs::path            mBasePath;
     MyArray<Pak>        mPaks;

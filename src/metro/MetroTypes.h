@@ -2,7 +2,22 @@
 #include "mycommon.h"
 #include "mymath.h"
 
+PACKED_STRUCT_BEGIN
+struct MetroGuid {  // 16 bytes
+    uint32_t    a;
+    uint16_t    b;
+    uint16_t    c;
+    uint16_t    d;
+    uint8_t     e[6];
+} PACKED_STRUCT_END;
+
 struct MetroFile {
+public:
+    enum : size_t {
+        Flag_Unknown4   = 4,    // patch folders have this one
+        Flag_Folder     = 8,
+    };
+
 public:
     struct iterator {
         friend MetroFile;
@@ -98,10 +113,10 @@ struct MetroVertex {
 
 struct MetroMesh {
     bool                 skinned;
-    vec3                 scales;
+    float                vscale;
     AABBox               bbox;
     size_t               type;
-    size_t               idx;
+    size_t               shaderId;
     StringArray          materials;
     MyArray<MetroFace>   faces;
     MyArray<MetroVertex> vertices;

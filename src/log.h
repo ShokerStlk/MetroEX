@@ -9,3 +9,4 @@ enum class LogLevel {
 void LogOpen(fs::path& folder);
 void LogClose();
 void LogPrint(LogLevel level, const CharString& message);
+void LogPrintF(LogLevel level, const char* format, ...);

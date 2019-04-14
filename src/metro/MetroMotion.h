@@ -16,7 +16,10 @@ public:
     ~MetroMotion();
 
     bool                    LoadFromData(MemStream& stream);
+    void                    SetPath(const CharString& path);
     const CharString&       GetName() const;
+    const CharString&       GetPath() const;
+    
 
     size_t                  GetBonesCRC() const;
     size_t                  GetNumBones() const;
@@ -34,6 +37,7 @@ public:
 
 //private:
     CharString              mName;
+    CharString              mPath;
 
     // header
     size_t                  mVersion;

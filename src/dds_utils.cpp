@@ -1,6 +1,7 @@
 #include "mycommon.h"
 #include "dds_utils.h"
 #include "bc7decomp.h"
+#include "bc7enc16.h"
 #define STB_DXT_IMPLEMENTATION
 #include "stb_dxt.h"
 
@@ -190,6 +191,41 @@ void DDS_CompressBC3(const void* inputRGBA, void* outBlocks, const size_t width,
             }
 
             stb_compress_dxt_block(dst, pixelsBlock, 1, STB_DXT_HIGHQUAL);
+
+            dst += 16;
+        }
+    }
+}
+
+void DDS_CompressBC7(const void* inputRGBA, void* outBlocks, const size_t width, const size_t height) {
+    static bool sNeedInitBc7Comp = true;
+
+    if (sNeedInitBc7Comp) {
+        bc7enc16_compress_block_init();
+        sNeedInitBc7Comp = false;
+    }
+
+    bc7enc16_compress_block_params params;
+    bc7enc16_compress_block_params_init(&params);
+    bc7enc16_compress_block_params_init_perceptual_weights(&params);
+
+    const size_t sx = (width < 4) ? width : 4;
+    const size_t sy = (height < 4) ? height : 4;
+
+    const uint8_t* srcPtr = rcast<const uint8_t*>(inputRGBA);
+    uint8_t* dst = rcast<uint8_t*>(outBlocks);
+
+    uint8_t pixelsBlock[16 * 4] = { 0 };
+
+    for (size_t y = 0; y < height; y += 4) {
+        for (size_t x = 0; x < width; x += 4) {
+            const uint8_t* src = srcPtr + (y * width + x) * 4;
+            for (size_t i = 0; i < 4; ++i) {
+                std::memcpy(&pixelsBlock[i * 16], src, 16);
+                src += (width * 4);
+            }
+
+            bc7enc16_compress_block(dst, pixelsBlock, &params);
 
             dst += 16;
         }

@@ -23,6 +23,9 @@ src/shaders/*.h
 # configs
 *.user
 
+# resources
+res.aps
+
 # folders
 .vs
 x64

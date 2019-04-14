@@ -253,6 +253,26 @@ private:
 };
 
 
+class MemWriteStream {
+public:
+    MemWriteStream() { buffer.reserve(4096); }
+    ~MemWriteStream() {}
+
+    void Write(const void* data, const size_t length) {
+        const size_t cursor = this->buffer.size();
+        this->buffer.resize(this->buffer.size() + length);
+        memcpy(this->buffer.data() + cursor, data, length);
+    }
+
+    template <typename T>
+    void Write(const T& v) {
+        this->Write(&v, sizeof(v));
+    }
+
+    BytesArray  buffer;
+};
+
+
 template <typename T>
 constexpr T SetBit(const T& v, const T& bit) {
     return v |= bit;

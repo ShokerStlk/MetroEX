@@ -5,6 +5,7 @@
 #include "metro/MetroSound.h"
 #include "metro/MetroSkeleton.h"
 #include "metro/MetroMotion.h"
+#include "metro_cli/BinExplorerTemplateEngine.h"
 
 #include <fstream>
 
@@ -323,6 +324,7 @@ namespace MetroEX {
             mExtractionCtx->customOffset = kInvalidValue;
             mExtractionCtx->customLength = kInvalidValue;
             mExtractionCtx->customFileName = "";
+            mExtractionCtx->templatePath = "";
 
             if (mf.IsFile()) {
                 switch (fileType) {
@@ -340,6 +342,7 @@ namespace MetroEX {
 
                     case FileType::Bin:
                     case FileType::BinArchive: {
+                        // Extract bin
                         auto ctxMenuExtractRoot = this->ctxMenuExportBin->Items->Find("extractBinRootToolStripMenuItem", false);
                         assert(ctxMenuExtractRoot->Length == 1);
 
@@ -353,6 +356,22 @@ namespace MetroEX {
                         } else {
                             ctxMenuExtractRoot[0]->Visible = false; // Hide "Extract root file"
                         }
+
+                        // Export bin
+                        String^ binFullPath = e->Node->FullPath;
+                        String^ binTemplatePath = "templates" + binFullPath->Substring(binFullPath->IndexOf("\\content\\"));
+                        String^ binExt = ".bin";
+                        int extPos = binTemplatePath->LastIndexOf(binExt);
+                        binTemplatePath = binTemplatePath->Remove(extPos, binExt->Length)->Insert(extPos, ".xml");
+
+                        if (IO::File::Exists(binTemplatePath) == true) {
+                            mExtractionCtx->templatePath = marshal_as<CharString>(binTemplatePath);
+                            exportBinFileToXMLToolStripMenuItem->Visible = true;
+                        } else {
+                            exportBinFileToXMLToolStripMenuItem->Visible = false;
+                        }
+
+                        // Show menu
                         this->ctxMenuExportBin->Show(this->treeView1, e->X, e->Y);
                     } break;
 
@@ -454,6 +473,47 @@ namespace MetroEX {
     void MainForm::extractBinChunkToolStripMenuItem_Click(System::Object^  sender, System::EventArgs^  e) {
         if (!this->ExtractFile(*mExtractionCtx, fs::path())) {
             this->ShowErrorMessage("Failed to extract bin file chunk!");
+        }
+    }
+
+    void MainForm::exportBinFileToXMLToolStripMenuItem_Click(System::Object^ sender, System::EventArgs^ e) {
+        if (mVFXReader != nullptr) {
+            FileExtractionCtx ctx = *mExtractionCtx;
+            assert(mExtractionCtx->templatePath.size() > 0);
+
+            const MetroFile& mf = mVFXReader->GetFile(ctx.fileIdx);
+            String^ name = ctx.customFileName.empty() ?
+                marshal_as<String^>(mf.name) :
+                marshal_as<String^>(ctx.customFileName);     
+            name = name->Replace(".bin", ".xml");
+
+            fs::path resultPath = fs::path();
+            if (resultPath.empty()) {
+                SaveFileDialog sfd;
+                sfd.Title = L"Save file...";
+                sfd.Filter = L"XML files (*.xml)|*.xml";
+                sfd.FileName = name;
+                sfd.RestoreDirectory = true;
+                sfd.OverwritePrompt = true;
+
+                if (sfd.ShowDialog(this) == System::Windows::Forms::DialogResult::OK) {
+                    resultPath = StringToPath(sfd.FileName);
+                }
+                else {
+                    return;
+                }
+            }
+
+            if (!resultPath.empty()) {
+                MemStream stream = mVFXReader->ExtractFile(ctx.fileIdx, ctx.customOffset, ctx.customLength);
+                if (stream) {
+                    String^ xmlTemplate = marshal_as<String^>(mExtractionCtx->templatePath);
+                    std::shared_ptr<MetroBinConfigs> binCfg = BinExplorerTemplate::ExtractBinArchiveData(xmlTemplate, stream);
+                    if (binCfg != nullptr) {
+                        BinExplorerTemplate::ExportToXML(xmlTemplate, *binCfg.get())->Save(marshal_as<String^>(resultPath.c_str()));
+                    }
+                }
+            }
         }
     }
 

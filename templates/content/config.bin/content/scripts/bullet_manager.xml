@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE root [  
+  <!ELEMENT schema ANY>
+  <!ATTLIST schema schema_id ID #REQUIRED>
+]> 
+<root template_version="1.0">
+  <schema schema_id="bin_schema" bin_name="bullet_manager.bin" bin_header="" bin_type="BinArchive" bin_verify_dbg_info="False">
+    <property name="gravity_const" type="fp32"/>  
+    <property name="cancel_on_death" type="fp32"/>  
+    <property name="tracer_radius" type="fp32"/>  
+    <property name="trail_radius" type="fp32"/>  
+    <property name="min_offset" type="fp32"/>  
+    <property name="collision_energy_min" type="fp32"/>
+    <property name="collision_energy_max" type="fp32"/>  
+    <property name="death_wallmark_material" type="stringZ"/>  
+    <property name="whine_sounds" type="stringZ"/>  
+  </schema>  
+</root>

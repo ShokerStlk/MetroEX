@@ -38,9 +38,11 @@ namespace MetroEX {
         size_t      fileIdx;
         FileType    type;
 
+        // bin
         size_t      customOffset;
         size_t      customLength;
         CharString  customFileName;
+        CharString  templatePath;
 
         // models
         bool        mdlSaveAsObj;
@@ -156,6 +158,7 @@ namespace MetroEX {
     private: System::Windows::Forms::ContextMenuStrip^  ctxMenuExportBin;
     private: System::Windows::Forms::ToolStripMenuItem^  extractBinRootToolStripMenuItem;
     private: System::Windows::Forms::ToolStripMenuItem^  extractBinChunkToolStripMenuItem;
+    private: System::Windows::Forms::ToolStripMenuItem^  exportBinFileToXMLToolStripMenuItem;
     private: System::Windows::Forms::TableLayoutPanel^  tableLayoutPanel2;
     private: System::Windows::Forms::Panel^  pnlViewers;
     private: System::Windows::Forms::Panel^  pnlMetaProps;
@@ -263,6 +266,7 @@ namespace MetroEX {
             this->ctxMenuExportBin = (gcnew System::Windows::Forms::ContextMenuStrip(this->components));
             this->extractBinRootToolStripMenuItem = (gcnew System::Windows::Forms::ToolStripMenuItem());
             this->extractBinChunkToolStripMenuItem = (gcnew System::Windows::Forms::ToolStripMenuItem());
+            this->exportBinFileToXMLToolStripMenuItem = (gcnew System::Windows::Forms::ToolStripMenuItem());
             this->statusStrip1->SuspendLayout();
             (cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->splitContainer1))->BeginInit();
             this->splitContainer1->Panel1->SuspendLayout();
@@ -816,27 +820,34 @@ namespace MetroEX {
             // 
             // ctxMenuExportBin
             // 
-            this->ctxMenuExportBin->Items->AddRange(gcnew cli::array< System::Windows::Forms::ToolStripItem^  >(2) {
+            this->ctxMenuExportBin->Items->AddRange(gcnew cli::array< System::Windows::Forms::ToolStripItem^  >(3) {
                 this->extractBinRootToolStripMenuItem,
-                    this->extractBinChunkToolStripMenuItem
+                    this->extractBinChunkToolStripMenuItem, this->exportBinFileToXMLToolStripMenuItem
             });
             this->ctxMenuExportBin->Name = L"ctxMenuExportBin";
             this->ctxMenuExportBin->RenderMode = System::Windows::Forms::ToolStripRenderMode::System;
-            this->ctxMenuExportBin->Size = System::Drawing::Size(183, 70);
+            this->ctxMenuExportBin->Size = System::Drawing::Size(197, 92);
             // 
             // extractBinRootToolStripMenuItem
             // 
             this->extractBinRootToolStripMenuItem->Name = L"extractBinRootToolStripMenuItem";
-            this->extractBinRootToolStripMenuItem->Size = System::Drawing::Size(182, 22);
+            this->extractBinRootToolStripMenuItem->Size = System::Drawing::Size(196, 22);
             this->extractBinRootToolStripMenuItem->Text = L"Extract root bin file...";
             this->extractBinRootToolStripMenuItem->Click += gcnew System::EventHandler(this, &MainForm::extractBinRootToolStripMenuItem_Click);
             // 
             // extractBinChunkToolStripMenuItem
             // 
             this->extractBinChunkToolStripMenuItem->Name = L"extractBinChunkToolStripMenuItem";
-            this->extractBinChunkToolStripMenuItem->Size = System::Drawing::Size(182, 22);
+            this->extractBinChunkToolStripMenuItem->Size = System::Drawing::Size(196, 22);
             this->extractBinChunkToolStripMenuItem->Text = L"Extract bin file...";
             this->extractBinChunkToolStripMenuItem->Click += gcnew System::EventHandler(this, &MainForm::extractBinChunkToolStripMenuItem_Click);
+            // 
+            // exportBinFileToXMLToolStripMenuItem
+            // 
+            this->exportBinFileToXMLToolStripMenuItem->Name = L"exportBinFileToXMLToolStripMenuItem";
+            this->exportBinFileToXMLToolStripMenuItem->Size = System::Drawing::Size(196, 22);
+            this->exportBinFileToXMLToolStripMenuItem->Text = L"Export bin file to XML...";
+            this->exportBinFileToXMLToolStripMenuItem->Click += gcnew System::EventHandler(this, &MainForm::exportBinFileToXMLToolStripMenuItem_Click);
             // 
             // MainForm
             // 
@@ -901,6 +912,7 @@ namespace MetroEX {
         void saveAsWAVToolStripMenuItem_Click(System::Object^ sender, System::EventArgs^ e);
         void extractBinRootToolStripMenuItem_Click(System::Object^ sender, System::EventArgs^ e);
         void extractBinChunkToolStripMenuItem_Click(System::Object^ sender, System::EventArgs^ e);
+        void exportBinFileToXMLToolStripMenuItem_Click(System::Object^ sender, System::EventArgs^ e);
 
         void extractFolderToolStripMenuItem_Click(System::Object^ sender, System::EventArgs^ e);
         void extractFolderWithConversionToolStripMenuItem_Click(System::Object^ sender, System::EventArgs^ e);

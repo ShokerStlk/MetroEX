@@ -81,6 +81,7 @@
     </ClCompile>
     <ClCompile Include="src\metro\MetroBinArchive.cpp" />
     <ClCompile Include="src\metro\MetroBinArrayArchive.cpp" />
+    <ClCompile Include="src\metro_cli\BinExplorerTemplateEngine.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ui\RenderPanel.h">
@@ -169,8 +170,10 @@
     </ClInclude>
     <ClInclude Include="src\metro\MetroBinArchive.h" />
     <ClInclude Include="src\metro\MetroBinArrayArchive.h" />
-    <ClInclude Include="src\metro\MetroBinTemplateEngine.h" />
     <ClInclude Include="src\metro\MetroBinIArchive.h" />
+    <ClInclude Include="src\metro_cli\MetroProps.h" />
+    <ClInclude Include="src\metro_cli\MetroPropsTypes.h" />
+    <ClInclude Include="src\metro_cli\BinExplorerTemplateEngine.h" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="src\ui\ImagePanel.resx" />

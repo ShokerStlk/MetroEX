@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE root [  
+  <!ELEMENT schema ANY>
+  <!ATTLIST schema schema_id ID #REQUIRED>
+]> 
+<root template_version="1.0">
+  <schema schema_id="bin_schema" bin_name="textures_handles_storage.bin" bin_header="AVER" bin_type="BinArrayArchive" bin_verify_dbg_info="True">
+    <property name="type" type="u32"/>
+    <property name="texture_type" type="u8"/>
+    <property name="source_name" type="stringZ"/>
+    <property name="surf_xform" type="vec4f"/>
+    <property name="format" type="u32"/>
+    <property name="width" type="u32"/>
+    <property name="height" type="u32"/>
+    <property name="animated" type="bool"/>
+    <property name="draft" type="bool"/>
+    <property name="override_avg_color" type="bool"/>
+    <property name="avg_color" type="color4f"/>
+    <property name="shader_name" type="stringZ_choose"/>
+    <property name="gamemtl_name" type="stringZ_choose"/>
+    <property name="priority" type="u32"/>
+    <property name="streamable" type="bool"/>
+    <property name="bump_height" type="fp32"/>
+    <property name="displ_type" type="u8"/>
+    <property name="displ_height" type="fp32"/>
+    <property name="parallax_height_mul" type="fp32"/>
+    <property name="mipmapped" type="bool"/>
+    <property name="reflectivity" type="fp32"/>
+    <property name="treat_as_metal" type="bool"/>
+    <property name="det_name" type="stringZ_choose"/>
+    <property name="det_scale_u" type="fp32"/>
+    <property name="det_scale_v" type="fp32"/>
+    <property name="det_intensity" type="fp32"/>
+    <property name="aux_params" type="color4f"/>
+    <property name="aux_params_1" type="color4f"/>
+    <property name="sph_coefs" type="fp32_array">
+      <condition cid="propEqual">
+        <prop>texture_type</prop>  
+        <value>3</value>  
+      </condition>  
+    </property>
+    <property name="lum" type="u8_array">
+      <condition cid="propEqual">
+        <prop>texture_type</prop>  
+        <value>12</value>  
+      </condition>  
+    </property>
+    <property name="bump_name" type="stringZ_choose"/>
+    <property name="aux0_name" type="stringZ_choose"/>
+    <property name="aux1_name" type="stringZ_choose"/>
+    <property name="aux2_name" type="stringZ_choose"/>
+    <property name="aux3_name" type="stringZ_choose"/>
+    <property name="aux4_name" type="stringZ_choose"/>
+    <property name="aux5_name" type="stringZ_choose"/>
+    <property name="aux6_name" type="stringZ_choose"/>
+    <property name="aux7_name" type="stringZ_choose"/>
+  </schema>  
+</root>

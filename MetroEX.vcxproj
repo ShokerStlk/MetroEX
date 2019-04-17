@@ -138,6 +138,7 @@
     <ClCompile Include="src\metro\MetroTexture.cpp" />
     <ClCompile Include="src\metro\MetroTexturesDatabase.cpp" />
     <ClCompile Include="src\metro\VFXReader.cpp" />
+    <ClCompile Include="src\metro_cli\BinExplorerTemplateEngine.cpp" />
     <ClCompile Include="src\ui\AboutDlg.cpp" />
     <ClCompile Include="src\ui\ChooseFolderDlg.cpp" />
     <ClCompile Include="src\ui\ExtractionOptionsDgl.cpp" />
@@ -151,7 +152,9 @@
     <ClInclude Include="libs\lz4\lz4.h" />
     <ClInclude Include="libs\xxhash\xxhash.h" />
     <ClInclude Include="src\metro\MetroBinIArchive.h" />
-    <ClInclude Include="src\metro\MetroBinTemplateEngine.h" />
+    <ClInclude Include="src\metro_cli\MetroProps.h" />
+    <ClInclude Include="src\metro_cli\MetroPropsTypes.h" />
+    <ClInclude Include="src\metro_cli\BinExplorerTemplateEngine.h" />
     <ClInclude Include="src\metro\MetroBinArchive.h" />
     <ClInclude Include="src\log.h" />
     <ClInclude Include="src\metro\MetroBinArrayArchive.h" />

@@ -315,7 +315,7 @@ namespace MetroEX {
             const size_t fileIdx = fileData->fileIdx & kFileIdxMask;
             const MetroFile& mf = mVFXReader->GetFile(fileIdx);
 
-            const FileType fileType = isSubFile ? fileData->fileType : DetectFileType(mf);
+            const FileType fileType = fileData->fileType;
 
             memset(mExtractionCtx, 0, sizeof(FileExtractionCtx));
             mExtractionCtx->fileIdx = fileIdx;
@@ -338,17 +338,22 @@ namespace MetroEX {
                         this->ctxMenuExportSound->Show(this->treeView1, e->X, e->Y);
                     } break;
 
-                    case FileType::Bin: {
+                    case FileType::Bin:
+                    case FileType::BinArchive: {
+                        auto ctxMenuExtractRoot = this->ctxMenuExportBin->Items->Find("extractBinRootToolStripMenuItem", false);
+                        assert(ctxMenuExtractRoot->Length == 1);
+
                         if (isSubFile) {
                             const MetroConfigsDatabase::ConfigInfo& ci = mConfigsDatabase->GetFileByIdx(fileData->subFileIdx);
 
                             mExtractionCtx->customOffset = ci.offset;
                             mExtractionCtx->customLength = ci.length;
                             mExtractionCtx->customFileName = marshal_as<CharString>(e->Node->Text);
-                            this->ctxMenuExportBin->Show(this->treeView1, e->X, e->Y);
+                            ctxMenuExtractRoot[0]->Visible = true; // Show "Extract root file"
                         } else {
-                            this->ctxMenuExportRaw->Show(this->treeView1, e->X, e->Y);
+                            ctxMenuExtractRoot[0]->Visible = false; // Hide "Extract root file"
                         }
+                        this->ctxMenuExportBin->Show(this->treeView1, e->X, e->Y);
                     } break;
 
                     case FileType::FolderBin: {

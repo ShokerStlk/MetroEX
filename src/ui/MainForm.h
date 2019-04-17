@@ -700,19 +700,19 @@ namespace MetroEX {
                     this->saveAsWAVToolStripMenuItem
             });
             this->ctxMenuExportSound->Name = L"ctxMenuExportSound";
-            this->ctxMenuExportSound->Size = System::Drawing::Size(150, 48);
+            this->ctxMenuExportSound->Size = System::Drawing::Size(151, 48);
             // 
             // saveAsOGGToolStripMenuItem
             // 
             this->saveAsOGGToolStripMenuItem->Name = L"saveAsOGGToolStripMenuItem";
-            this->saveAsOGGToolStripMenuItem->Size = System::Drawing::Size(149, 22);
+            this->saveAsOGGToolStripMenuItem->Size = System::Drawing::Size(150, 22);
             this->saveAsOGGToolStripMenuItem->Text = L"Save as OGG...";
             this->saveAsOGGToolStripMenuItem->Click += gcnew System::EventHandler(this, &MainForm::saveAsOGGToolStripMenuItem_Click);
             // 
             // saveAsWAVToolStripMenuItem
             // 
             this->saveAsWAVToolStripMenuItem->Name = L"saveAsWAVToolStripMenuItem";
-            this->saveAsWAVToolStripMenuItem->Size = System::Drawing::Size(149, 22);
+            this->saveAsWAVToolStripMenuItem->Size = System::Drawing::Size(150, 22);
             this->saveAsWAVToolStripMenuItem->Text = L"Save as WAV...";
             this->saveAsWAVToolStripMenuItem->Click += gcnew System::EventHandler(this, &MainForm::saveAsWAVToolStripMenuItem_Click);
             // 
@@ -822,20 +822,20 @@ namespace MetroEX {
             });
             this->ctxMenuExportBin->Name = L"ctxMenuExportBin";
             this->ctxMenuExportBin->RenderMode = System::Windows::Forms::ToolStripRenderMode::System;
-            this->ctxMenuExportBin->Size = System::Drawing::Size(163, 48);
+            this->ctxMenuExportBin->Size = System::Drawing::Size(183, 70);
             // 
             // extractBinRootToolStripMenuItem
             // 
             this->extractBinRootToolStripMenuItem->Name = L"extractBinRootToolStripMenuItem";
-            this->extractBinRootToolStripMenuItem->Size = System::Drawing::Size(162, 22);
-            this->extractBinRootToolStripMenuItem->Text = L"Extract root file...";
+            this->extractBinRootToolStripMenuItem->Size = System::Drawing::Size(182, 22);
+            this->extractBinRootToolStripMenuItem->Text = L"Extract root bin file...";
             this->extractBinRootToolStripMenuItem->Click += gcnew System::EventHandler(this, &MainForm::extractBinRootToolStripMenuItem_Click);
             // 
             // extractBinChunkToolStripMenuItem
             // 
             this->extractBinChunkToolStripMenuItem->Name = L"extractBinChunkToolStripMenuItem";
-            this->extractBinChunkToolStripMenuItem->Size = System::Drawing::Size(162, 22);
-            this->extractBinChunkToolStripMenuItem->Text = L"Extract this file...";
+            this->extractBinChunkToolStripMenuItem->Size = System::Drawing::Size(182, 22);
+            this->extractBinChunkToolStripMenuItem->Text = L"Extract bin file...";
             this->extractBinChunkToolStripMenuItem->Click += gcnew System::EventHandler(this, &MainForm::extractBinChunkToolStripMenuItem_Click);
             // 
             // MainForm

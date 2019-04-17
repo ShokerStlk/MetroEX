@@ -372,7 +372,7 @@ void MetroMotion::ReadAttributeCurve(const uint8_t* curveData, AttributeCurve& c
 
                     p.value = MetroSwizzle(p.value);
 
-                    //*rcast<quat*>(&p.value) = Normalize(*rcast<quat*>(&p.value));
+                    *rcast<quat*>(&p.value) = Normalize(*rcast<quat*>(&p.value));
 
                     timingsPtr++;
                     valuesPtr += 3;

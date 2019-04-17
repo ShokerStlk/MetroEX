@@ -16,6 +16,8 @@ using namespace msclr::interop;
 using namespace System;
 using namespace System::Drawing;
 using namespace System::Windows::Forms;
+using namespace System::Threading;
+using namespace System::Globalization;
 
 ref class WheelFilter : public System::Windows::Forms::IMessageFilter
 {
@@ -38,6 +40,12 @@ public:
 
 [STAThreadAttribute]
 void Main(array<String^>^ args) {
+    // Set default culture
+    CultureInfo^ appCulture = (CultureInfo^)CultureInfo::CurrentCulture->Clone();
+    appCulture->NumberFormat->NumberDecimalSeparator = ".";
+    Thread::CurrentThread->CurrentCulture   = appCulture;
+    Thread::CurrentThread->CurrentUICulture = appCulture;
+
     Application::EnableVisualStyles();
     Application::SetCompatibleTextRenderingDefault(false);
 

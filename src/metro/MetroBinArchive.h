@@ -7,7 +7,7 @@
 
 class MetroReflectionReader;
 
-class MetroBinArchive : IMetroBinArchive
+class MetroBinArchive : public IMetroBinArchive
 {
 public:
     static const size_t kHeaderNotExist = 0;
@@ -100,7 +100,7 @@ public:
         return TestBit(mBinFlags, MetroBinFlags::HasDebugInfo);
     }
 
-    inline const CharString& GetFileName() const {
+    inline virtual const CharString& GetFileName() const override {
         return mFileName;
     }
 

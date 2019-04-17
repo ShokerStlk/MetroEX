@@ -6,7 +6,7 @@
 
 class MetroBinArchive;
 
-class MetroBinArrayArchive : IMetroBinArchive
+class MetroBinArrayArchive : public IMetroBinArchive
 {
 public:
     static const uint16_t kFileVersionNotExist = ~0;
@@ -112,7 +112,7 @@ public:
         return MemStream(mFileStream);
     }
 
-    inline const CharString& GetFileName() const {
+    inline virtual const CharString& GetFileName() const override {
         return mFileName;
     }
 

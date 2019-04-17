@@ -8,7 +8,7 @@ MetroBinArchive::MetroBinArchive(const CharString& name, const MemStream& _binSt
 
     // Search for header
     mIsHeaderExist = false;
-    mHeaderSize = 0;
+    mHeaderSize = kHeaderNotExist;
 
     if (_headerSize != kHeaderNotExist) {
         if (_headerSize == kHeaderDoAutoSearch) {
@@ -32,7 +32,9 @@ MetroBinArchive::MetroBinArchive(const CharString& name, const MemStream& _binSt
             mFileStream.SetCursor(0);
 
             // Set header size
-            mHeaderSize = firstChunkPos - 0x1 /*bin flags*/;
+            if (firstChunkPos > 0) {
+                mHeaderSize = firstChunkPos - 0x1 /*bin flags*/;
+            }
         }
         else {
             mHeaderSize = _headerSize;

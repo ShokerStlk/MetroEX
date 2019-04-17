@@ -26,7 +26,13 @@ using quat = glm::highp_quat;
 using ivec4 = glm::highp_ivec4;
 
 struct color4f : vec4 {
-
+    color4f() : vec4() {;}
+    color4f(const vec4& vec4f) {
+        this->x = vec4f.x;
+        this->y = vec4f.y;
+        this->z = vec4f.z;
+        this->w = vec4f.w;
+    }
 };
 
 struct AABBox {

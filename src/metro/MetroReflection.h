@@ -95,6 +95,11 @@ public:
         return true;
     }
 
+    void SkipEditorTag() {
+        CharString name = mStream.ReadStringZ();
+        CharString type = mStream.ReadStringZ();
+    }
+
     bool VerifyTypeInfo(const CharString& propName, const CharString& typeAlias) {
         if (mVerifyTypesInfo) {
             CharString name = mStream.ReadStringZ();
@@ -110,6 +115,15 @@ public:
             }
         }
         return true;
+    }
+
+    bool SkipTypeInfo() {
+        if (mVerifyTypesInfo) {
+            CharString name = mStream.ReadStringZ();
+            CharString type = mStream.ReadStringZ();
+            return true;
+        }
+        return false;
     }
 
     CharString BeginSection() {
@@ -256,9 +270,25 @@ struct ArrayElementTypeGetter {
     s.VerifyTypeInfo(STRINGIFY(memberName), MetroTypeGetAlias<decltype(memberName)>()); \
     s >> memberName;
 
+#define METRO_READ_MEMBER_SKIP_VERIFY(s, memberName)    \
+    s.SkipTypeInfo();                                   \
+    s >> memberName;
+
+#define METRO_READ_MEMBER_MANUAL_VERIFY(s, member, memberName)              \
+    s.VerifyTypeInfo(memberName, MetroTypeGetAlias<decltype(member)>());    \
+    s >> member;
+
 #define METRO_READ_ARRAY_MEMBER(s, memberName)                                                                                  \
     s.VerifyTypeInfo(STRINGIFY(memberName), MetroTypeArrayGetAlias<ArrayElementTypeGetter<decltype(memberName)>::elem_type>()); \
     s >> memberName;
+
+#define METRO_READ_ARRAY_MEMBER_SKIP_VERIFY(s, memberName)  \
+    s.SkipTypeInfo();                                       \
+    s >> memberName;
+
+#define METRO_READ_ARRAY_MEMBER_MANUAL_VERIFY(s, member, memberName)                                                \
+    s.VerifyTypeInfo(memberName, MetroTypeArrayGetAlias<ArrayElementTypeGetter<decltype(member)>::elem_type>());    \
+    s >> member;
 
 #define METRO_READ_STRUCT_ARRAY_MEMBER(s, memberName)   s.ReadStructArray(STRINGIFY(memberName), memberName)
 
@@ -266,6 +296,16 @@ struct ArrayElementTypeGetter {
     s.ReadEditorTag(STRINGIFY(memberName));                                             \
     s.VerifyTypeInfo(STRINGIFY(memberName), MetroTypeGetAlias<decltype(memberName)>()); \
     s >> memberName;
+
+#define METRO_READ_MEMBER_CHOOSE_SKIP_VERIFY(s, memberName) \
+    s.SkipEditorTag();                                      \
+    s.SkipTypeInfo();                                       \
+    s >> memberName;
+
+#define METRO_READ_MEMBER_CHOOSE_MANUAL_VERIFY(s, member, memberName)       \
+    s.ReadEditorTag(memberName);                                            \
+    s.VerifyTypeInfo(memberName, MetroTypeGetAlias<decltype(member)>());    \
+    s >> member;
 
 #define METRO_READ_MEMBER_STRARRAY_CHOOSE(s, memberName)                        \
     s.ReadEditorTag(STRINGIFY(memberName));                                     \

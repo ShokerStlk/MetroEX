@@ -2,8 +2,7 @@
 #include "metro/VFXReader.h"
 #include "metro/MetroTexturesDatabase.h"
 #include "metro/MetroConfigDatabase.h"
-
-#include "ui\MainForm.h"
+#include "metro/MetroMaterialsDatabase.h"
 
 static void LoadDatabasesFromFile(VFXReader* vfxReader, MetroTexturesDatabase*& texDb, MetroConfigsDatabase*& cfgDb) {
     size_t fileIdx = 0;
@@ -38,4 +37,13 @@ static void LoadDatabasesFromFile(VFXReader* vfxReader, MetroTexturesDatabase*& 
             cfgDb->LoadFromData(stream);
         }
     }
+
+    // load materials database
+    //if (cfgDb) {
+    //    MemStream materialsStream = cfgDb->GetFileStream(R"(content\scripts\materials.bin)");
+    //    if (materialsStream.Good()) {
+    //        MetroMaterialsDatabase materialsDb;
+    //        materialsDb.LoadFromData(materialsStream);
+    //    }
+    //}
 }

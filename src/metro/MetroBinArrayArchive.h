@@ -2,11 +2,10 @@
 // .bin with fixed array of another (non-fixed size) .bin-s
 
 #include "mycommon.h"
-#include "MetroBinIArchive.h"
 
 class MetroBinArchive;
 
-class MetroBinArrayArchive : IMetroBinArchive
+class MetroBinArrayArchive
 {
 public:
     static const uint16_t kFileVersionNotExist = ~0;
@@ -71,7 +70,7 @@ public:
 
     MetroBinArrayArchive(const CharString& name, const MemStream& _binStream, const uint32_t _headerAlias);
 
-    virtual bool IsBinArrayArchive() override { return true; };
+    virtual bool IsBinArrayArchive() { return true; };
 
     inline ChunkData& GetChunkByIdx(size_t idx) {
         assert(idx < this->GetBinCnt());
@@ -96,19 +95,19 @@ public:
         return mChunks.size();
     }
 
-    virtual const MemStream& GetRawStream() const override {
+    virtual const MemStream& GetRawStream() const {
         return mFileStream;
     }
 
-    virtual MemStream& GetRawDangerStream() override { // use carefully
+    virtual MemStream& GetRawDangerStream() { // use carefully
         return mFileStream;
     }
 
-    virtual MemStream GetRawStreamCopy() override {
+    virtual MemStream GetRawStreamCopy() {
         return MemStream(mFileStream);
     }
 
-    virtual MemStream GetRawStreamCopy() const override {
+    virtual MemStream GetRawStreamCopy() const {
         return MemStream(mFileStream);
     }
 

@@ -16,10 +16,10 @@ struct MetroTextureInfo {
         Arbitrary4          = 7,
         Normalmap           = 8,
         Normalmap_alpha     = 9,
-        Normalmap_detail    = 0x0A,
-        Unknown_01          = 0x0B,
-        Unknown_has_lum     = 0x0C,     //#NOTE_SK: has lum (u8_array)
-        Instance            = 0x40
+        Normalmap_detail    = 10,
+        Unknown_01          = 11,
+        Unknown_has_lum     = 12,     //#NOTE_SK: has lum (u8_array)
+        Instance            = 64
     };
 
     enum class PixelFormat : uint32_t {
@@ -56,59 +56,56 @@ struct MetroTextureInfo {
         Displace = 2
     };
 
-    CharString      name;           //#NOTE_SK: no verification!
-    uint8_t         flags;          //#NOTE_SK: no verification!
-    uint32_t        type;           //#NOTE_SK: TextureType enum
-    uint8_t         texture_type;   //#NOTE_SK: seems to be same as type
-    RefString       source_name;
-    vec4            surf_xform;
-    uint32_t        format;         //#NOTE_SK: PixelFormat enum
-    uint32_t        width;
-    uint32_t        height;
-    bool            animated;
-    bool            draft;
-    bool            override_avg_color;
-    color4f         avg_color;
-    RefString       shader_name;    // choose
-    RefString       gamemtl_name;   // choose
-    uint32_t        priority;
-    bool            streamable;
-    float           bump_height;
-    uint8_t         displ_type;     //#NOTE_SK: DisplType enum
-    float           displ_height;
-    float           parallax_height_mul;
-    bool            mipmapped;
-    float           reflectivity;
-    bool            treat_as_metal;
-    RefString       det_name;       // choose
-    float           det_scale_u;
-    float           det_scale_v;
-    float           det_intensity;
-    color4f         aux_params;
-    color4f         aux_params_1;
+    CharString          name;           //#NOTE_SK: transient member !!!
+
+    uint32_t            type;           //#NOTE_SK: TextureType enum
+    uint8_t             texture_type;   //#NOTE_SK: seems to be same as type
+    CharString          source_name;
+    vec4                surf_xform;
+    uint32_t            format;         //#NOTE_SK: PixelFormat enum
+    uint32_t            width;
+    uint32_t            height;
+    bool                animated;
+    bool                draft;
+    bool                override_avg_color;
+    color4f             avg_color;
+    CharString          shader_name;    // choose
+    CharString          gamemtl_name;   // choose
+    uint32_t            priority;
+    bool                streamable;
+    float               bump_height;
+    uint8_t             displ_type;     //#NOTE_SK: DisplType enum
+    float               displ_height;
+    float               parallax_height_mul;
+    bool                mipmapped;
+    float               reflectivity;
+    bool                treat_as_metal;
+    CharString          det_name;       // choose
+    float               det_scale_u;
+    float               det_scale_v;
+    float               det_intensity;
+    color4f             aux_params;
+    color4f             aux_params_1;
     // !!! Optional fields !!!
-    MyArray<uint8_t>  lum;
-    MyArray<float>    sph_coefs;
+    MyArray<uint8_t>    lum;
+    MyArray<float>      sph_coefs;
     ///////////////////////////
-    RefString       bump_name;      // choose
-    RefString       aux0_name;      // choose
-    RefString       aux1_name;      // choose
-    RefString       aux2_name;      // choose
-    RefString       aux3_name;      // choose
-    RefString       aux4_name;      // choose
-    RefString       aux5_name;      // choose
-    RefString       aux6_name;      // choose
-    RefString       aux7_name;      // choose
+    CharString          bump_name;      // choose
+    CharString          aux0_name;      // choose
+    CharString          aux1_name;      // choose
+    CharString          aux2_name;      // choose
+    CharString          aux3_name;      // choose
+    CharString          aux4_name;      // choose
+    CharString          aux5_name;      // choose
+    CharString          aux6_name;      // choose
+    CharString          aux7_name;      // choose
 
     void Serialize(MetroReflectionReader& s);
 };
 
 struct MetroTextureAliasInfo {
-    uint32_t    unknown0;   // always 0 ???
-    uint32_t    unknown1;   // always 9 ???
-    uint8_t     flags;      // always 4 ???
-    RefString   name;
-    RefString   alias;
+    CharString  src;
+    CharString  dst;
 
     void Serialize(MetroReflectionReader& s);
 };
@@ -131,8 +128,5 @@ public:
 private:
     MyArray<MetroTextureInfo>             mPool;
     MyDict<HashString, MetroTextureInfo*> mDatabase;
-    MyDict<HashString, MetroTextureInfo*> mDiffuseTextures;
-    MyDict<HashString, MetroTextureInfo*> mNormalmapTextures;
-
     MyDict<HashString, HashString>        mAliases;
 };

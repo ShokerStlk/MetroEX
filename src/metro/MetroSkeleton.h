@@ -4,8 +4,8 @@
 class MetroReflectionReader;
 
 struct ParentMapped {   // 48 bytes
-    RefString   parent_bone;
-    RefString   self_bone;
+    CharString  parent_bone;
+    CharString  self_bone;
     quat        q;
     vec3        t;
     vec3        s;
@@ -16,8 +16,8 @@ struct ParentMapped {   // 48 bytes
 struct MetroBone {      // 38 bytes
     static const size_t InvalidIdx = kInvalidValue;
 
-    RefString   name;
-    RefString   parent;
+    CharString  name;
+    CharString  parent;
     quat        q;
     vec3        t;
     uint8_t     bp;
@@ -44,17 +44,16 @@ public:
     const CharString&       GetMotionsStr() const;
 
 private:
-    void                    DeserializeSelf(MemStream& stream, const uint8_t flags);
-    void                    ReadSubChunks(MemStream& stream, const uint8_t flags);
+    void                    DeserializeSelf(MetroReflectionReader& reader);
 
 private:
-    uint32_t                ver;                // always 21 ???
+    uint32_t                ver;
     uint32_t                crc;
-    RefString               pfnn;
+    CharString              pfnn;
     bool                    has_as;
-    RefString               motions;
-    RefString               source_info;
-    RefString               parent_skeleton;
+    CharString              motions;
+    CharString              source_info;
+    CharString              parent_skeleton;
     MyArray<ParentMapped>   parent_bone_maps;
     MyArray<MetroBone>      bones;
 

@@ -147,7 +147,7 @@ MemStream VFXReader::ExtractFile(const size_t fileIdx, const size_t subOffset, c
             free(fileContent);
         }
 
-        if (result) {
+        if (result.Good()) {
             result.SetWindow(streamOffset, streamLength);
         }
     }

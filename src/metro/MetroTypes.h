@@ -85,17 +85,6 @@ public:
 };
 
 
-struct MetroBinFlags {
-    static const uint8_t None           =   0;
-    static const uint8_t HasDebugInfo   =   1;
-    static const uint8_t Editor         =   2;
-    static const uint8_t RefStrings     =   4;
-    static const uint8_t Plain          =   8;
-    static const uint8_t NoSections     =   16;
-    static const uint8_t MultiChunk     =   32;
-};
-
-
 PACKED_STRUCT_BEGIN
 struct MetroFace {
     uint16_t a, b, c;

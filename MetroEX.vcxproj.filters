@@ -40,9 +40,6 @@
     <ClCompile Include="src\metro\MetroModel.cpp">
       <Filter>src\metro</Filter>
     </ClCompile>
-    <ClCompile Include="src\metro\MetroReflection.cpp">
-      <Filter>src\metro</Filter>
-    </ClCompile>
     <ClCompile Include="src\metro\MetroSkeleton.cpp">
       <Filter>src\metro</Filter>
     </ClCompile>
@@ -84,7 +81,8 @@
     </ClCompile>
     <ClCompile Include="src\metro\MetroBinArrayArchive.cpp">
       <Filter>src\metro</Filter>
-    </ClCompile>    <ClCompile Include="src\metro\MetroCompression.cpp">
+    </ClCompile>
+    <ClCompile Include="src\metro\MetroCompression.cpp">
       <Filter>src\metro</Filter>
     </ClCompile>
     <ClCompile Include="libs\lz4\lz4hc.c">
@@ -98,7 +96,11 @@
     </ClCompile>
     <ClCompile Include="libs\bc7enc16\bc7enc16.c">
       <Filter>libs\bc7enc16</Filter>
-    </ClCompile>  </ItemGroup>
+    </ClCompile>
+    <ClCompile Include="src\metro\MetroMaterialsDatabase.cpp">
+      <Filter>src\metro</Filter>
+    </ClCompile>
+  </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ui\RenderPanel.h">
       <Filter>src\ui</Filter>
@@ -193,9 +195,7 @@
     <ClInclude Include="src\metro\MetroBinTemplateEngine.h">
       <Filter>src\metro</Filter>
     </ClInclude>
-    <ClInclude Include="src\metro\MetroBinIArchive.h">
-      <Filter>src\metro</Filter>
-    </ClInclude>    <ClInclude Include="src\metro\MetroCompression.h">
+    <ClInclude Include="src\metro\MetroCompression.h">
       <Filter>src\metro</Filter>
     </ClInclude>
     <ClInclude Include="libs\lz4\lz4hc.h">
@@ -209,7 +209,11 @@
     </ClInclude>
     <ClInclude Include="libs\bc7enc16\bc7enc16.h">
       <Filter>libs\bc7enc16</Filter>
-    </ClInclude>  </ItemGroup>
+    </ClInclude>
+    <ClInclude Include="src\metro\MetroMaterialsDatabase.h">
+      <Filter>src\metro</Filter>
+    </ClInclude>
+  </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="src\ui\ImagePanel.resx" />
     <EmbeddedResource Include="src\ui\SoundPanel.resx" />

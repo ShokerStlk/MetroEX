@@ -54,13 +54,9 @@ void MetroTextureInfo::Serialize(MetroReflectionReader& s) {
     METRO_READ_MEMBER_CHOOSE(s, aux7_name);
 }
 
-void MetroTextureAliasInfo::Serialize(MetroReflectionReader & s)
-{
-    METRO_READ_MEMBER(s, unknown0); // always 0 ???
-    METRO_READ_MEMBER(s, unknown1); // always 9 ???
-    METRO_READ_MEMBER(s, flags);    // always 4 ???
-    METRO_READ_MEMBER(s, name);
-    METRO_READ_MEMBER(s, alias);
+void MetroTextureAliasInfo::Serialize(MetroReflectionReader & s) {
+    METRO_READ_MEMBER(s, src);
+    METRO_READ_MEMBER(s, dst);
 }
 
 MetroTexturesDatabase::MetroTexturesDatabase() {
@@ -71,34 +67,34 @@ MetroTexturesDatabase::~MetroTexturesDatabase() {
 }
 
 bool MetroTexturesDatabase::LoadFromData(MemStream& stream) {
-    MetroBinArrayArchive binArchive("textures_handles_storage.bin", stream, MakeFourcc<'A','V','E','R'>());
+    size_t numEntries = stream.ReadTyped<uint32_t>();
+    if (numEntries == MakeFourcc<'A','V','E','R'>()) {
+        stream.SkipBytes(2);
+        numEntries = stream.ReadTyped<uint32_t>();
+    }
 
-    const size_t numEntries = binArchive.GetBinCnt();
-
-    mDatabase.reserve(numEntries);
     mPool.resize(numEntries);
+    mDatabase.reserve(numEntries);
 
     for (size_t i = 0; i < numEntries; ++i) {
-        const MetroBinArrayArchive::ChunkData& chunk = binArchive.GetChunkByIdx(i);
-        const MetroBinArchive& bin = chunk.GetBinArchive();
-        assert(bin.HasChunks() == false);
-        
-        MetroReflectionReader reader = bin.ReturnReflectionReader(bin.GetOffsetFirstDataBegin());
+        const size_t idx = stream.ReadTyped<uint32_t>();
+        const size_t size = stream.ReadTyped<uint32_t>();
+
+        MemStream subStream = stream.Substream(size);
+
+        CharString name = subStream.ReadStringZ();
+        const uint8_t flags = subStream.ReadTyped<uint8_t>();
+
+        MetroReflectionReader reader(subStream, flags);
 
         MetroTextureInfo* texInfo = &mPool[i];
-        texInfo->name   = bin.GetFileName();
-        texInfo->flags  = bin.GetFlags();
+        texInfo->name = name;
         reader >> *texInfo;
 
         HashString hashStr(texInfo->name);
-
         mDatabase.insert({ hashStr, texInfo });
 
-        if (texInfo->texture_type == scast<uint8_t>(MetroTextureInfo::TextureType::Diffuse)) {
-            mDiffuseTextures.insert({ hashStr, texInfo });
-        } else if (texInfo->texture_type == scast<uint8_t>(MetroTextureInfo::TextureType::Normalmap)) {
-            mNormalmapTextures.insert({ hashStr, texInfo });
-        }
+        stream.SkipBytes(size);
     }
 
     return true;
@@ -106,24 +102,16 @@ bool MetroTexturesDatabase::LoadFromData(MemStream& stream) {
 
 bool MetroTexturesDatabase::LoadAliasesFromData(MemStream& stream) {
     MetroBinArchive bin("texture_aliases.bin", stream, MetroBinArchive::kHeaderDoAutoSearch);
+    MetroReflectionReader reader = bin.ReflectionReader();
 
-    assert(bin.HasRefStrings());
-    StringArray strings = bin.ReadStringTable();
+    MyArray<MetroTextureAliasInfo> texture_aliases;
+    METRO_READ_STRUCT_ARRAY_MEMBER(reader, texture_aliases);
 
-    const size_t dataOffset = bin.GetFirstChunk().GetChunkDataOffset();
-    MetroReflectionReader reader = bin.ReturnReflectionReader(dataOffset);
-
-    reader.GetStream().SkipBytes(9); // skip unkn data
-
-    uint32_t numAliases = 0;
-    METRO_READ_MEMBER(reader, numAliases);
-    mAliases.reserve(numAliases);
-
-    for (size_t i = 0; i < scast<size_t>(numAliases); ++i) {
-        MetroTextureAliasInfo texAliasInfo;
-        reader >> texAliasInfo;
-
-        mAliases.insert({ HashString(strings[texAliasInfo.name.ref]), HashString(strings[texAliasInfo.alias.ref]) });
+    if (!texture_aliases.empty()) {
+        mAliases.reserve(texture_aliases.size());
+        for (const auto& alias : texture_aliases) {
+            mAliases.insert({ HashString(alias.src), HashString(alias.dst) });
+        }
     }
 
     return true;
@@ -139,30 +127,26 @@ const MetroTextureInfo* MetroTexturesDatabase::GetInfoByName(const HashString& n
 }
 
 const HashString& MetroTexturesDatabase::GetAlias(const HashString& name) const {
-    static HashString empty;
+    static HashString emptyString;
 
     auto it = mAliases.find(name);
     if (it == mAliases.end()) {
-        return empty;
+        return emptyString;
     }
 
     return it->second;
 }
 
 const CharString& MetroTexturesDatabase::GetSourceName(const HashString& name) const {
-    static CharString emptyStr;
-
     const HashString& alias = this->GetAlias(name);
 
     const MetroTextureInfo* mti = this->GetInfoByName((alias.hash == 0) ? name : alias);
-    return (mti == nullptr) ? emptyStr : mti->source_name.str;
+    return (mti == nullptr) ? kEmptyString : mti->source_name;
 }
 
 const CharString& MetroTexturesDatabase::GetBumpName(const HashString& name) const {
-    static CharString emptyStr;
-
     const HashString& alias = this->GetAlias(name);
 
     const MetroTextureInfo* mti = this->GetInfoByName((alias.hash == 0) ? name : alias);
-    return (mti == nullptr) ? emptyStr : mti->bump_name.str;
+    return (mti == nullptr) ? kEmptyString : mti->bump_name;
 }

@@ -25,7 +25,9 @@ using CharString = std::string;
 using StringArray = MyArray<CharString>;
 using BytesArray = MyArray<uint8_t>;
 
-static const size_t kInvalidValue = ~0;
+static const uint32_t   kInvalidValue32 = ~0u;
+static const size_t     kInvalidValue = ~0;
+static const CharString kEmptyString;
 
 
 #define rcast reinterpret_cast
@@ -39,28 +41,15 @@ static const size_t kInvalidValue = ~0;
 #define PACKED_STRUCT_END __pragma(pack(pop))
 #endif
 
-
-struct RefString {
-    static const uint32_t InvalidRef = ~0u;
-
-    RefString() : ref(InvalidRef) {}
-    RefString(const RefString& other) : ref(other.ref), str(other.str) {}
-
-    inline bool IsValidRef() const {
-        return this->ref != InvalidRef;
+struct StringsTable {
+    const char* GetString(const size_t idx) const {
+        return this->strings[idx];
     }
 
-    bool operator ==(const RefString& other) const {
-        if (this->IsValidRef()) {
-            return ref == other.ref;
-        } else {
-            return str == other.str;
-        }
-    }
-
-    uint32_t    ref;
-    CharString  str;
+    MyArray<char>        data;
+    MyArray<const char*> strings;
 };
+
 
 struct Hasher {
     static uint32_t FromData(const void* data, const size_t length) {
@@ -241,8 +230,24 @@ public:
     }
 
     MemStream Substream(const size_t subStreamLength) const {
-        const size_t allowedLength = ((this->cursor + subStreamLength) > this->length) ? (this->length - this->cursor) : subStreamLength;
-        return std::move(MemStream(this->GetDataAtCursor(), allowedLength));
+        const size_t allowedLength = ((this->cursor + subStreamLength) > this->Length()) ? (this->Length() - this->cursor) : subStreamLength;
+        return MemStream(this->GetDataAtCursor(), allowedLength);
+    }
+
+    MemStream Substream(const size_t subStreamOffset, const size_t subStreamLength) const {
+        const size_t allowedOffset = (subStreamOffset > this->Length()) ? this->Length() : subStreamOffset;
+        const size_t allowedLength = ((allowedOffset + subStreamLength) > this->Length()) ? (this->Length() - allowedOffset) : subStreamLength;
+        return MemStream(this->data + allowedOffset, allowedLength);
+    }
+
+    MemStream Clone() const {
+        if (this->ownedPtr) {
+            return *this;
+        } else {
+            void* dataCopy = malloc(this->Length());
+            memcpy(dataCopy, this->data, this->Length());
+            return MemStream(dataCopy, this->Length(), true);
+        }
     }
 
 private:

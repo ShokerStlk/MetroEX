@@ -12,6 +12,8 @@ MetroConfigsDatabase::~MetroConfigsDatabase() {
 }
 
 bool MetroConfigsDatabase::LoadFromData(MemStream& stream) {
+    bool result = false;
+
     mStatsTotalDecryptedNames = 0;
     mStatsTotalEncryptedNames = 0;
 
@@ -36,7 +38,12 @@ bool MetroConfigsDatabase::LoadFromData(MemStream& stream) {
         stream.SkipBytes(bodySize);
     }
 
-    return !mConfigsChunks.empty();
+    if (!mConfigsChunks.empty()) {
+        mStream = stream.Clone();
+        result = true;
+    }
+
+    return result;
 }
 
 const MetroConfigsDatabase::ConfigInfo* MetroConfigsDatabase::FindFile(const uint32_t nameCRC) const {
@@ -53,6 +60,11 @@ const MetroConfigsDatabase::ConfigInfo* MetroConfigsDatabase::FindFile(const Cha
     });
 
     return (it == mConfigsChunks.end()) ? nullptr : &(*it);
+}
+
+MemStream MetroConfigsDatabase::GetFileStream(const CharString& name) const {
+    auto i = this->FindFile(name);
+    return (i == nullptr) ? MemStream() : mStream.Substream(i->offset, i->length);
 }
 
 size_t MetroConfigsDatabase::GetNumFiles() const {

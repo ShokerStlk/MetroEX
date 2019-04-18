@@ -18,10 +18,13 @@ public:
     const ConfigInfo*   FindFile(const uint32_t nameCRC) const;
     const ConfigInfo*   FindFile(const CharString& name) const;
 
+    MemStream           GetFileStream(const CharString& name) const;
+
     size_t              GetNumFiles() const;
     const ConfigInfo&   GetFileByIdx(const size_t chunkIdx) const;
 
 private:
+    MemStream           mStream;
     MyArray<ConfigInfo> mConfigsChunks;
 
     size_t              mStatsTotalDecryptedNames;

@@ -1,4 +1,5 @@
 #include "MetroSkeleton.h"
+#include "MetroBinArchive.h"
 #include "MetroReflection.h"
 
 enum SkeletonChunks : size_t {
@@ -35,16 +36,12 @@ MetroSkeleton::~MetroSkeleton() {
 bool MetroSkeleton::LoadFromData(MemStream& stream) {
     bool result = false;
 
-    const uint8_t flags = stream.ReadTyped<uint8_t>();
-    const bool hasDebugInfo = TestBit(flags, MetroBinFlags::HasDebugInfo);
-
-    if (hasDebugInfo) {
-        this->DeserializeSelf(stream, flags);
-    } else {
-        this->ReadSubChunks(stream, flags);
+    MetroBinArchive bin(kEmptyString, stream, MetroBinArchive::kHeaderDoAutoSearch);
+    MetroReflectionReader reader = bin.ReflectionReader();
+    if (reader.Good()) {
+        this->DeserializeSelf(reader);
+        result = !this->bones.empty();
     }
-
-    result = !this->bones.empty();
 
     return result;
 }
@@ -80,7 +77,7 @@ mat4 MetroSkeleton::GetBoneFullTransform(const size_t idx) const {
 const size_t MetroSkeleton::GetBoneParentIdx(const size_t idx) const {
     size_t result = MetroBone::InvalidIdx;
 
-    const RefString& parentName = this->bones[idx].parent;
+    const CharString& parentName = this->bones[idx].parent;
     for (size_t i = 0; i < this->bones.size(); ++i) {
         if (this->bones[i].name == parentName) {
             result = i;
@@ -92,39 +89,31 @@ const size_t MetroSkeleton::GetBoneParentIdx(const size_t idx) const {
 }
 
 const CharString& MetroSkeleton::GetBoneName(const size_t idx) const {
-    const RefString& name = this->bones[idx].name;
-    return name.IsValidRef() ? mStringsDict[name.ref] : name.str;
+    return this->bones[idx].name;
 }
 
 const CharString& MetroSkeleton::GetMotionsStr() const {
-    return this->motions.IsValidRef() ? mStringsDict[this->motions.ref] : this->motions.str;
+    return this->motions;
 }
 
 
-void MetroSkeleton::DeserializeSelf(MemStream& stream, const uint8_t flags) {
-    const bool hasDebugInfo = TestBit(flags, MetroBinFlags::HasDebugInfo);
-    const bool stringsAsRef = TestBit(flags, MetroBinFlags::RefStrings);
-
-    MetroReflectionReader s(stream, hasDebugInfo, stringsAsRef);
-
-    if (hasDebugInfo) {
-        //#NOTE_SK: temporary hack to skip section header
-        const CharString& sectionName = s.BeginSection();
-        assert(sectionName == "skeleton");
+void MetroSkeleton::DeserializeSelf(MetroReflectionReader& reader) {
+    MetroReflectionReader skeletonReader = reader.OpenSection("skeleton");
+    if (skeletonReader.Good()) {
+        METRO_READ_MEMBER(skeletonReader, ver);
+        METRO_READ_MEMBER(skeletonReader, crc);
+        // if version < 15 - read facefx (CharString)
+        METRO_READ_MEMBER(skeletonReader, pfnn); // if version > 16
+        if (this->ver > 20) {
+            METRO_READ_MEMBER(skeletonReader, has_as); // if version > 20
+        }
+        METRO_READ_MEMBER(skeletonReader, motions);
+        METRO_READ_MEMBER(skeletonReader, source_info); // if version > 12
+        METRO_READ_MEMBER(skeletonReader, parent_skeleton); // if version > 13
+        METRO_READ_STRUCT_ARRAY_MEMBER(skeletonReader, parent_bone_maps); // if version > 13
+        METRO_READ_STRUCT_ARRAY_MEMBER(skeletonReader, bones);
     }
-
-    METRO_READ_MEMBER(s, ver);
-    METRO_READ_MEMBER(s, crc);
-    // if version < 15 - read facefx (RefString)
-    METRO_READ_MEMBER(s, pfnn); // if version > 16
-    if (this->ver > 20) {
-        METRO_READ_MEMBER(s, has_as); // if version > 20
-    }
-    METRO_READ_MEMBER(s, motions);
-    METRO_READ_MEMBER(s, source_info); // if version > 12
-    METRO_READ_MEMBER(s, parent_skeleton); // if version > 13
-    METRO_READ_STRUCT_ARRAY_MEMBER(s, parent_bone_maps); // if version > 13
-    METRO_READ_STRUCT_ARRAY_MEMBER(s, bones);
+    reader.CloseSection(skeletonReader);
 
     //#NOTE_SK: fix-up bones transforms by swizzling them back
     for (auto& b : bones) {
@@ -136,29 +125,4 @@ void MetroSkeleton::DeserializeSelf(MemStream& stream, const uint8_t flags) {
     // locators
     // aux_bones
     // procedural
-}
-
-void MetroSkeleton::ReadSubChunks(MemStream& stream, const uint8_t flags) {
-    while (!stream.Ended()) {
-        const size_t chunkId = stream.ReadTyped<uint32_t>();
-        const size_t chunkSize = stream.ReadTyped<uint32_t>();
-        const size_t chunkEnd = stream.GetCursor() + chunkSize;
-
-        switch (chunkId) {
-            case SC_SelfData: {
-                this->DeserializeSelf(stream.Substream(chunkSize), flags);
-            } break;
-
-            case SC_StringsDictionary: {
-                const size_t numStrings = stream.ReadTyped<uint32_t>();
-                mStringsDict.resize(numStrings);
-
-                for (CharString& s : mStringsDict) {
-                    s = stream.ReadStringZ();
-                }
-            } break;
-        }
-
-        stream.SetCursor(chunkEnd);
-    }
 }

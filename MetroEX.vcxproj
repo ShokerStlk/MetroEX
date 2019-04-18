@@ -139,10 +139,10 @@
     <ClCompile Include="src\metro\MetroConfigDatabase.cpp" />
     <ClCompile Include="src\metro\MetroLevel.cpp" />
     <ClCompile Include="src\metro\MetroDatabases.h" />
+    <ClCompile Include="src\metro\MetroMaterialsDatabase.cpp" />
     <ClCompile Include="src\metro\MetroModel.cpp" />
     <ClCompile Include="src\metro\MetroMotion.cpp" />
     <ClCompile Include="src\metro\MetroPatchTool.cpp" />
-    <ClCompile Include="src\metro\MetroReflection.cpp" />
     <ClCompile Include="src\metro\MetroSkeleton.cpp" />
     <ClCompile Include="src\metro\MetroSound.cpp" />
     <ClCompile Include="src\metro\MetroTexture.cpp" />
@@ -163,7 +163,6 @@
     <ClInclude Include="libs\lz4\lz4.h" />
     <ClInclude Include="libs\lz4\lz4hc.h" />
     <ClInclude Include="libs\xxhash\xxhash.h" />
-    <ClInclude Include="src\metro\MetroBinIArchive.h" />
     <ClInclude Include="src\metro\MetroBinTemplateEngine.h" />
     <ClInclude Include="src\metro\MetroBinArchive.h" />
     <ClInclude Include="src\log.h" />
@@ -175,6 +174,7 @@
     <ClInclude Include="src\hashing.h" />
     <ClInclude Include="src\metro\MetroConfigDatabase.h" />
     <ClInclude Include="src\metro\MetroLevel.h" />
+    <ClInclude Include="src\metro\MetroMaterialsDatabase.h" />
     <ClInclude Include="src\metro\MetroModel.h" />
     <ClInclude Include="src\metro\MetroMotion.h" />
     <ClInclude Include="src\metro\MetroPatchTool.h" />

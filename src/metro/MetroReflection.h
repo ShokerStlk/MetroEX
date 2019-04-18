@@ -1,6 +1,17 @@
 #pragma once
 #include "mycommon.h"
 #include "mymath.h"
+#include "hashing.h"
+
+struct MetroReflectionFlags {
+    static const uint8_t None           = 0;
+    static const uint8_t HasDebugInfo   = 1;
+    static const uint8_t Editor         = 2;
+    static const uint8_t StringsTable   = 4;
+    static const uint8_t Plain          = 8;
+    static const uint8_t NoSections     = 16;
+    static const uint8_t MultiChunk     = 32;
+};
 
 
 #define METRO_MAKE_TYPE_ALIAS_STRING_NAME(type, alias)  sMetroRegisteredType##type##Alias##alias##Str
@@ -56,7 +67,6 @@ METRO_REGISTER_TYPE_ALIAS(vec3, vec3f)
 METRO_REGISTER_TYPE_ALIAS(vec4, vec4f)
 METRO_REGISTER_TYPE_ALIAS(quat, vec4f)
 METRO_REGISTER_TYPE_ALIAS(CharString, stringz)
-METRO_REGISTER_TYPE_ALIAS(RefString, stringz)
 
 METRO_REGISTER_INHERITED_TYPE_ALIAS(color4f, vec4f, color)
 
@@ -69,46 +79,102 @@ METRO_REGISTER_TYPE_ARRAY_ALIAS(float, fp32)
 
 class MetroReflectionReader {
 public:
-    MetroReflectionReader(const MemStream& s, const bool verifyTypeInfo = false, const bool refStrings = false)
+    MetroReflectionReader()
+        : mStream()
+        , mSTable(nullptr)
+        , mFlags(MetroReflectionFlags::None) {
+    }
+
+    MetroReflectionReader(const MemStream& s, const uint8_t flags = MetroReflectionFlags::None)
         : mStream(s)
-        , mVerifyTypesInfo(verifyTypeInfo)
-        , mReadRefStrings(refStrings) {
+        , mSTable(nullptr)
+        , mFlags(flags) {
     }
 
     MetroReflectionReader(const MetroReflectionReader& other)
         : mStream(other.mStream)
-        , mVerifyTypesInfo(other.mVerifyTypesInfo)
-        , mReadRefStrings(other.mReadRefStrings) {
+        , mSTable(other.mSTable)
+        , mFlags(other.mFlags)
+        , mSectionName(other.mSectionName) {
     }
 
     MetroReflectionReader(MetroReflectionReader&& other)
         : mStream(std::move(other.mStream))
-        , mVerifyTypesInfo(other.mVerifyTypesInfo)
-        , mReadRefStrings(other.mReadRefStrings) {
+        , mSTable(other.mSTable)
+        , mFlags(other.mFlags)
+        , mSectionName(std::move(other.mSectionName)) {
+    }
+
+    inline MetroReflectionReader& operator =(const MetroReflectionReader& other) {
+        mStream = other.mStream;
+        mSTable = other.mSTable;
+        mFlags = other.mFlags;
+        mSectionName = other.mSectionName;
+        return *this;
+    }
+
+    inline MetroReflectionReader& operator =(MetroReflectionReader&& other) {
+        mStream = std::move(other.mStream);
+        mSTable = other.mSTable;
+        mFlags = other.mFlags;
+        mSectionName = std::move(other.mSectionName);
+        return *this;
     }
 
     inline MemStream& GetStream() {
         return mStream;
     }
 
-    void SetOptions(const bool verifyTypeInfo = false, const bool refStrings = false) {
-        mVerifyTypesInfo = verifyTypeInfo;
-        mReadRefStrings = refStrings;
+    inline bool Good() const {
+        return mStream.Good();
+    }
+
+    inline bool HasDebugInfo() const {
+        return TestBit(mFlags, MetroReflectionFlags::HasDebugInfo);
+    }
+
+    inline bool HasStringsTable() const {
+        return TestBit(mFlags, MetroReflectionFlags::StringsTable);
+    }
+
+    inline bool HasNoSections() const {
+        return TestBit(mFlags, MetroReflectionFlags::NoSections);
+    }
+
+    void SetSTable(const StringsTable* stable) {
+        mSTable = stable;
+    }
+
+    void SetSectionName(const CharString& sectionName) {
+        mSectionName = sectionName;
+    }
+
+    const CharString& GetSectionName() const {
+        return mSectionName;
     }
 
     bool ReadEditorTag(const CharString& propName) {
-        CharString name = mStream.ReadStringZ();
-        assert(name == propName);
-        if (name != propName) {
-            return false;
-        }
+        //static CharString sChooseStr("choose");
 
-        mStream.ReadStringZ();
+        if (this->HasDebugInfo()) {
+            CharString name = mStream.ReadStringZ();
+            assert(name == propName);
+            if (name != propName) {
+                return false;
+            }
+
+            CharString chooseStr = mStream.ReadStringZ();
+            //#TODO_SK: different choose attributes could be
+            //assert(chooseStr == sChooseStr);
+            //if (chooseStr != sChooseStr) {
+            //    return false;
+            //}
+        }
         return true;
     }
 
     bool VerifyTypeInfo(const CharString& propName, const CharString& typeAlias) {
-        if (mVerifyTypesInfo) {
+        if (this->HasDebugInfo()) {
             CharString name = mStream.ReadStringZ();
             assert(name == propName);
             if (name != propName) {
@@ -124,40 +190,83 @@ public:
         return true;
     }
 
-    CharString BeginSection() {
-        uint32_t dataCrc, dataSize;
-        uint8_t flags;
-        CharString sectionName;
+    MetroReflectionReader OpenSection(const CharString& sectionName, const bool nameUnknown = false) {
+        if (this->HasNoSections()) {
+            return *this;
+        } else {
+            const uint32_t crc = sectionName.empty() ? 0u : Hash_CalculateCRC32(sectionName);
 
-        (*this) >> dataCrc;
-        (*this) >> dataSize;
-        (*this) >> flags;       //#TODO_SK: check ???
-        (*this) >> sectionName;
+            const uint32_t sectionNameCrc = *rcast<const uint32_t*>(mStream.GetDataAtCursor());
+            if (nameUnknown || sectionNameCrc == crc) {
+                mStream.SkipBytes(sizeof(uint32_t));
 
-        return sectionName;
+                uint32_t sectionSize;
+                uint8_t flags;
+                (*this) >> sectionSize;
+                (*this) >> flags;
+
+                const size_t dataSize = sectionSize - 1;
+                //#TODO_SK: replace with constants
+                MetroReflectionReader result(mStream.Substream(dataSize), flags);
+                result.SetSTable(mSTable);
+
+                if (this->HasDebugInfo()) {
+                    CharString name;
+                    result >> name;
+                    if (!nameUnknown) {
+                        assert(sectionName == name);
+                    }
+                }
+
+                return std::move(result);
+            } else {
+                return MetroReflectionReader();
+            }
+        }
+    }
+
+    void CloseSection(const MetroReflectionReader& section) {
+        if (section.Good()) {
+            if (this->HasNoSections()) {
+                //#NOTE_SK: since it's our shadow copy, we just sync our cursors
+                mStream.SetCursor(section.mStream.GetCursor());
+            } else {
+                mStream.SkipBytes(section.mStream.Length());
+            }
+        }
+    }
+
+    template <typename T>
+    void ReadStruct(const CharString& memberName, T& v) {
+        MetroReflectionReader s = this->OpenSection(memberName);
+        if (s.Good()) {
+            s >> v;
+        }
+        this->CloseSection(s);
     }
 
     template <typename T>
     void ReadStructArray(const CharString& memberName, MyArray<T>& v) {
-        if (mVerifyTypesInfo) {
-            this->VerifyTypeInfo(memberName, "array");
-            const CharString& sectionName = this->BeginSection();
-            assert(sectionName == memberName);
-            this->VerifyTypeInfo("count", MetroTypeGetAlias<uint32_t>());
-        }
+        this->VerifyTypeInfo(memberName, "array");
 
-        uint32_t arraySize;
-        (*this) >> arraySize;
-        if (arraySize > 0) {
-            v.resize(arraySize);
-            for (T& e : v) {
-                if (mVerifyTypesInfo) {
-                    this->BeginSection();
+        MetroReflectionReader s = this->OpenSection(memberName);
+        if (s.Good()) {
+            s.VerifyTypeInfo("count", MetroTypeGetAlias<uint32_t>());
+
+            uint32_t arraySize;
+            s >> arraySize;
+            if (arraySize > 0) {
+                v.resize(arraySize);
+                for (T& e : v) {
+                    MetroReflectionReader subS = s.OpenSection(kEmptyString, true);
+                    if (subS.Good()) {
+                        subS >> e;
+                    }
+                    s.CloseSection(subS);
                 }
-
-                (*this) >> e;
             }
         }
+        this->CloseSection(s);
     }
 
     template <typename T>
@@ -182,14 +291,14 @@ public:
 #undef IMPLEMENT_SIMPLE_TYPE_READ
 
     inline void operator >>(CharString& v) {
-        v = mStream.ReadStringZ();
-    }
-
-    inline void operator >>(RefString& v) {
-        if (mReadRefStrings) {
-            (*this) >> v.ref;
+        if (this->HasStringsTable()) {
+            uint32_t ref;
+            (*this) >> ref;
+            if (ref != kInvalidValue32 && mSTable) {
+                v = mSTable->GetString(ref);
+            }
         } else {
-            (*this) >> v.str;
+            v = mStream.ReadStringZ();
         }
     }
 
@@ -247,9 +356,10 @@ public:
 #undef IMPLEMENT_TYPE_ARRAY_READ
 
 private:
-    MemStream   mStream;
-    bool        mVerifyTypesInfo;
-    bool        mReadRefStrings;
+    MemStream           mStream;
+    const StringsTable* mSTable;
+    uint8_t             mFlags;
+    CharString          mSectionName;
 };
 
 
@@ -265,11 +375,13 @@ struct ArrayElementTypeGetter {
     s.VerifyTypeInfo(STRINGIFY(memberName), MetroTypeGetAlias<decltype(memberName)>()); \
     s >> memberName;
 
+#define METRO_READ_STRUCT_MEMBER(s, memberName) s.ReadStruct(STRINGIFY(memberName), memberName)
+
 #define METRO_READ_ARRAY_MEMBER(s, memberName)                                                                                  \
     s.VerifyTypeInfo(STRINGIFY(memberName), MetroTypeArrayGetAlias<ArrayElementTypeGetter<decltype(memberName)>::elem_type>()); \
     s >> memberName;
 
-#define METRO_READ_STRUCT_ARRAY_MEMBER(s, memberName)   s.ReadStructArray(STRINGIFY(memberName), memberName)
+#define METRO_READ_STRUCT_ARRAY_MEMBER(s, memberName) s.ReadStructArray(STRINGIFY(memberName), memberName)
 
 #define METRO_READ_MEMBER_CHOOSE(s, memberName)                                         \
     s.ReadEditorTag(STRINGIFY(memberName));                                             \
